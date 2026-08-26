@@ -41,12 +41,28 @@ OpenRCT2용 "우든 롤러코스터 트랙 생성 플러그인"을 만들고, �
 
 ## 진행 상황
 - [x] 0단계: OpenRCT2 + 플러그인 설치, 공원 로드
-- [ ] 0단계 확인: `python scripts/00_smoke.py`
-- [ ] 2단계: `python scripts/01_extract_geometry.py` -> geometry.json
-- [ ] 1단계: `python scripts/02_hello_coaster.py` -> 평점 출력
+- [x] 0단계 확인: `python scripts/00_smoke.py`
+- [x] 2단계: `python scripts/01_extract_geometry.py` -> geometry.json (636개 조합, origin z=30)
+- [x] 1단계: `python scripts/02_hello_coaster.py` -> 평점 출력 (흥미 0.27/격렬 0.30/멀미 0.18)
 - [ ] 3단계: `python scripts/03_collect.py --n 1000`
 - [ ] 4단계: 학습 코드 (model/ 아래, 아직 tokenizer.py만 있음)
 - [ ] 5단계: OpenRCT2 플러그인 UI
+
+## 알려진 제약 / TODO 추가
+- **설치된 `markusklock/openrct2-ridecreation-api`에 `segment.getNextValidSegments`가 없어서
+  `placeTrackPiece`/`getValidNextPieces` 응답이 항상 "not a function"으로 깨지는 버그가 있었음.**
+  로컬 설치본(`Documents/OpenRCT2/plugin/ridecreation-api.js`)의 `computeValidNextPieces`를
+  직접 패치해서 해결 (해당 함수 존재 여부를 체크하고 없으면 validPieces만 빈 배열로 처리,
+  좌표(position/nextEndpoint)는 그대로 반환). 원본은 `ridecreation-api.js.bak`으로 보관.
+  플러그인을 재설치/업데이트하면 이 패치가 사라지니 다시 적용해야 함.
+- `rct/client.py`의 `place()`는 이제 조각의 `beginZ`(진입 z 오프셋, 8단위=tileCoordinateZ 1칸)를
+  자동 보정한다. 내리막류 조각은 baseZ가 슬로프 낮은 쪽 기준이라 이 보정이 필요함.
+- `01_extract_geometry.py`는 **항상 평지 스테이션 바로 다음에서만** 각 조각을 테스트하므로,
+  UP25/DOWN25처럼 같은 경사 상태의 조각 뒤에만 이어질 수 있는 "중간 경사" 조각들은
+  구조적으로 못 잡는다 (게임 룰이지 버그 아님). 636/1400개가 현재 방식의 사실상 상한.
+  더 채우려면 조각별로 적절한 전환 조각을 먼저 놓고 테스트하는 다단계 추출이 필요함 (TODO).
+- extract origin은 지면(z=14)보다 너무 높이 띄우면 "지지대 최대 높이" 제한에 걸린다.
+  현재 z=30 (지면+16) 사용 중 — 내리막 조각이 땅에 안 박힐 정도로만 살짝 띄운 값.
 
 ## 다음에 할 일
 `scripts/00_smoke.py`부터 순서대로 돌린다. `02_hello_coaster.py`의 SEQUENCE는

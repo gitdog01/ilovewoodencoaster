@@ -20,17 +20,24 @@ WEIGHTS = {
 }
 
 
-def _pick(candidates, pos, anchor):
-    """높이 회복 방향을 살짝 선호하는 가중 무작위 선택."""
-    weights = []
+def _weighted_order(candidates, pos, anchor):
+    """높이 회복 방향을 살짝 선호하는 가중치로, 후보 전체를 무작위 순서로 정렬.
+
+    (알려진 플러그인 제약: getValidNextPieces가 실제 연결 규칙을 못 내려주므로,
+    여기서 나온 순서대로 하나씩 실제 배치를 시도해서 성공하는 걸 찾는다.)
+    """
+    weighted = []
     for t in candidates:
         w = WEIGHTS.get(t, 1)
         if pos.z > anchor.z and t in (C.FLAT_TO_DOWN25, C.DOWN25, C.DOWN25_TO_FLAT):
             w *= 3
         if pos.z < anchor.z and t in (C.FLAT_TO_UP25, C.UP25, C.UP25_TO_FLAT):
             w *= 3
-        weights.append(w)
-    return random.choices(candidates, weights=weights, k=1)[0]
+        # A-ES 가중 셔플: key가 클수록 먼저 온다.
+        key = random.random() ** (1.0 / w)
+        weighted.append((key, t))
+    weighted.sort(reverse=True)
+    return [t for _, t in weighted]
 
 
 def generate_episode(env: WoodenCoasterEnv, sim: TrackSimulator, bounds: Bounds,
@@ -50,6 +57,12 @@ def generate_episode(env: WoodenCoasterEnv, sim: TrackSimulator, bounds: Bounds,
         sequence.append((t, chain))
 
     # 2) 나머지는 무작위 워크 + 백트래킹
+    #
+    # 원래는 env.c.valid_next()(getValidNextPieces)로 "연결 가능한 조각"을 미리
+    # 받아서 그중에서 골랐다. 근데 설치된 플러그인이 이 목록을 항상 빈 배열로
+    # 돌려주는 문제가 있어서(알려진 제약, CLAUDE.md 참고), 대신 시뮬레이터로
+    # geometry.json 상 정의된 후보만 추린 다음 무작위 순서로 실제 배치를
+    # 하나씩 시도해서 게임이 받아주는 걸 찾는다.
     undo = 0
     visited = set()
     while len(sequence) < max_pieces:
@@ -57,28 +70,28 @@ def generate_episode(env: WoodenCoasterEnv, sim: TrackSimulator, bounds: Bounds,
         pos = Pos(p["x"], p["y"], p["z"], p["direction"])
         visited.add(pos.key())
 
-        valid = env.c.valid_next(env.ride_id)["validPieces"]
-        valid = [t for t in valid if t not in C.STATION_PIECES]
-        valid = sim.legal_moves(pos, valid, bounds, visited)
+        candidates = [t for t in WEIGHTS if t not in C.STATION_PIECES]
+        candidates = sim.legal_moves(pos, candidates, bounds, visited)
         remaining = max_pieces - len(sequence)
-        valid = [t for t in valid
-                 if sim.closable(sim.advance(pos, t), anchor, remaining - 1)]
+        candidates = [t for t in candidates
+                      if sim.closable(sim.advance(pos, t), anchor, remaining - 1)]
 
-        if not valid:
+        placed = False
+        for t in _weighted_order(candidates, pos, anchor):
+            ok, _, complete = env.step(t, chain=False)
+            if not ok:
+                continue
+            sequence.append((t, False))
+            placed = True
+            if complete:
+                return sequence
+            break
+
+        if not placed:
             if not sequence or undo > max_undo:
                 return None
             env.undo()
             sequence.pop()
             undo += 1
-            continue
-
-        t = _pick(valid, pos, anchor)
-        ok, _, complete = env.step(t, chain=False)
-        if not ok:
-            undo += 1
-            continue
-        sequence.append((t, False))
-        if complete:
-            return sequence
 
     return None

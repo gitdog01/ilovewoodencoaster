@@ -13,9 +13,10 @@ SEQUENCE = [
     (C.TURN_L5, False), (C.TURN_L5, False),
     (C.FLAT_TO_DOWN25, False), (C.DOWN25, False), (C.DOWN25, False),
     (C.DOWN25, False), (C.DOWN25_TO_FLAT, False),
-    (C.FLAT, False), (C.FLAT, False),
+    # 꼬리: geom/simulator.py의 BFS 탐색으로 anchor에 정확히 닫히는 조합을 찾음
+    # (원래 FLAT x2 + TURN_L5 x2 + FLAT x3 는 x가 5칸 어긋나서 안 닫혔음).
+    (C.FLAT, False), (C.FLAT, False), (C.FLAT, False), (C.FLAT, False),
     (C.TURN_L5, False), (C.TURN_L5, False),
-    (C.FLAT, False), (C.FLAT, False), (C.FLAT, False),
 ]
 
 with RCTClient.discover() as c:

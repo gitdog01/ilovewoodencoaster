@@ -16,6 +16,7 @@ class RCTClient:
         self.host, self.port = host, port
         self.sock = socket.create_connection((host, port), timeout=timeout)
         self.f = self.sock.makefile("r", encoding="utf-8")
+        self._segs_cache = None
 
     # -- 연결 ------------------------------------------------------------
     @classmethod
@@ -55,7 +56,13 @@ class RCTClient:
         self.close()
 
     # -- 프로토콜 --------------------------------------------------------
-    def call(self, endpoint, params=None, strict=True):
+    def call_full(self, endpoint, params=None):
+        """success 여부와 무관하게 원본 응답 dict를 그대로 반환한다.
+
+        일부 엔드포인트(예: 스테이션 조각 placeTrackPiece)는 게임에는 실제로
+        반영되면서도 응답 조립 과정에서만 실패하는 플러그인 버그가 있어,
+        error 메시지를 직접 들여다봐야 할 때 call() 대신 이걸 쓴다.
+        """
         req = {"endpoint": endpoint}
         if params:
             req["params"] = params
@@ -63,7 +70,10 @@ class RCTClient:
         line = self.f.readline()
         if not line:
             raise RCTError("연결이 끊겼습니다 (공원을 닫았거나 게임이 종료됨)")
-        resp = json.loads(line)
+        return json.loads(line)
+
+    def call(self, endpoint, params=None, strict=True):
+        resp = self.call_full(endpoint, params)
         if not resp.get("success"):
             if strict:
                 raise RCTError(f"[{endpoint}] {resp.get('error')}")
@@ -83,21 +93,45 @@ class RCTClient:
     def all_track_segments(self):
         return self.call("getAllTrackSegments")
 
+    def _z_offset(self, track_type):
+        """조각의 진입 z 오프셋 (tileCoordinateZ 단위).
+
+        게임은 일부 조각(주로 내리막류)의 트랙 엘리먼트 baseZ를 슬로프의
+        "낮은 쪽" 기준으로 저장한다. 그래서 이런 조각은 실제 진입 높이보다
+        beginZ만큼 낮은 z로 호출해야 이어붙는다 (raw 8 단위 = tileCoordinateZ 1칸).
+        """
+        if self._segs_cache is None:
+            self._segs_cache = {s["type"]: s for s in self.all_track_segments()}
+        seg = self._segs_cache.get(track_type)
+        return (seg.get("beginZ", 0) // 8) if seg else 0
+
     def create_ride(self, ride_type, ride_object, colour1=0, colour2=0):
         return self.call("createRide", {
             "rideType": ride_type, "rideObject": ride_object,
             "entranceObject": 0, "colour1": colour1, "colour2": colour2,
         })["rideId"]
 
-    def place(self, ride_id, ride_type, x, y, z, direction, track_type,
-              chain=False, brake_speed=0, strict=False):
-        return self.call("placeTrackPiece", {
+    def place_full(self, ride_id, ride_type, x, y, z, direction, track_type,
+                   chain=False, brake_speed=0):
+        """place()와 같은 요청을 보내되 원본 응답(dict)을 그대로 돌려준다."""
+        return self.call_full("placeTrackPiece", {
             "tileCoordinateX": x, "tileCoordinateY": y, "tileCoordinateZ": z,
             "direction": direction, "ride": ride_id, "trackType": track_type,
             "rideType": ride_type, "brakeSpeed": brake_speed, "colour": 0,
             "seatRotation": 0, "trackPlaceFlags": 0, "isFromTrackDesign": True,
             "hasChainLift": bool(chain),
-        }, strict=strict)
+        })
+
+    def place(self, ride_id, ride_type, x, y, z, direction, track_type,
+              chain=False, brake_speed=0, strict=False):
+        z -= self._z_offset(track_type)
+        resp = self.place_full(ride_id, ride_type, x, y, z, direction, track_type,
+                               chain, brake_speed)
+        if not resp.get("success"):
+            if strict:
+                raise RCTError(f"[placeTrackPiece] {resp.get('error')}")
+            return None
+        return resp.get("payload")
 
     def delete_last(self, ride_id):
         return self.call("deleteLastTrackPiece", {"rideId": ride_id}, strict=False)

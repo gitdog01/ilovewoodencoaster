@@ -45,7 +45,11 @@ class WoodenCoasterEnv:
                 raise RCTError(f"스테이션 배치 실패 @ {pos} type={t}. origin을 평지로 바꿔보세요.")
             pos = p["nextEndpoint"]
 
-        self.c.place_entrance_exit(self.ride_id)
+        if self.c.place_entrance_exit(self.ride_id) is None:
+            # strict=False라 조용히 실패할 수 있음 -- startRideTest가 나중에
+            # 원인 모를 에러로 죽으면 대개 이게 원인이니 눈에 띄게 남겨둔다.
+            print(f"[env] 경고: placeEntranceExit 실패 (ride {self.ride_id}). "
+                  "테스트 시작이 나중에 실패할 수 있음.")
         self.pos = pos
         self.complete = False
         return dict(pos)
@@ -84,7 +88,13 @@ class WoodenCoasterEnv:
         """테스트 주행 후 평점을 기다린다. 실패 시 None."""
         if not self.complete:
             return None
-        self.c.start_test(self.ride_id)
+        try:
+            self.c.start_test(self.ride_id)
+        except RCTError as e:
+            # 대량 수집 중 하나가 startRideTest에서 죽으면 배치 전체가 멈추므로,
+            # 여기서 흡수하고 "평점 없음"으로 취급한다 (호출부가 이미 그렇게 처리함).
+            print(f"[env] 테스트 시작 실패, 이 트랙은 건너뜀: {e}")
+            return None
         deadline = time.time() + timeout
         while time.time() < deadline:
             s = self.c.stats(self.ride_id)
