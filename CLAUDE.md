@@ -82,3 +82,19 @@ OpenRCT2용 "우든 롤러코스터 트랙 생성 플러그인"을 만들고, �
 시작 전 체크리스트: OpenRCT2를 `openrct2.com`으로 실행하고 평지 샌드박스 공원을
 로드해뒀는지 먼저 확인 (플러그인 패치는 `Documents/OpenRCT2/plugin/ridecreation-api.js`에
 이미 적용돼 있음 — 플러그인을 재설치하지 않았다면 그대로 유지됨).
+
+## 병렬 수집 (여러 OpenRCT2 인스턴스)
+`03_collect.py`에 `--port` 옵션 추가해둠. 플러그인은 8080부터 시작해 빈 포트를
+자동으로 잡으므로, OpenRCT2 창을 여러 개 띄우면(각각 평지 샌드박스 공원 로드)
+순서대로 8080, 8081, 8082... 를 잡는다. 그 다음 터미널을 여러 개 열어서:
+
+```bash
+python scripts/03_collect.py --port 8080 --n 250 --out data/part_8080.jsonl
+python scripts/03_collect.py --port 8081 --n 250 --out data/part_8081.jsonl
+python scripts/03_collect.py --port 8082 --n 250 --out data/part_8082.jsonl
+python scripts/03_collect.py --port 8083 --n 250 --out data/part_8083.jsonl
+```
+처럼 동시에 실행하면 인스턴스 수만큼 빨라진다. `--port` 생략하면 기존처럼
+첫 빈 포트에 자동 접속 (단일 인스턴스일 때는 그대로 쓰면 됨).
+끝나고 `data/part_*.jsonl` 을 `cat`으로 합치면 됨 (전부 `data/*.jsonl` 이라
+.gitignore에 이미 잡혀있어서 커밋 걱정은 안 해도 됨).

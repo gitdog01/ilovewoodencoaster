@@ -13,6 +13,9 @@ ap.add_argument("--out", default="data/dataset.jsonl")
 ap.add_argument("--width", type=int, default=24)
 ap.add_argument("--depth", type=int, default=24)
 ap.add_argument("--height", type=int, default=48)
+ap.add_argument("--port", type=int, default=None,
+                help="특정 headless 인스턴스에 붙는다 (병렬 수집용). "
+                     "생략하면 기존처럼 첫 빈 포트를 자동 탐색.")
 args = ap.parse_args()
 
 sim = TrackSimulator("geometry.json")
@@ -21,7 +24,8 @@ bounds = Bounds.around(origin, args.width, args.depth, args.height)
 
 os.makedirs(os.path.dirname(args.out), exist_ok=True)
 ok = 0
-with RCTClient.discover() as c, open(args.out, "a", encoding="utf-8") as fp:
+ports = [args.port] if args.port else range(8080, 8090)
+with RCTClient.discover(ports=ports) as c, open(args.out, "a", encoding="utf-8") as fp:
     env = WoodenCoasterEnv(c, origin=origin)
     for i in range(args.n):
         seq = generate_episode(env, sim, bounds)
