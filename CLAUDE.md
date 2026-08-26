@@ -42,7 +42,8 @@ OpenRCT2용 "우든 롤러코스터 트랙 생성 플러그인"을 만들고, �
 ## 진행 상황
 - [x] 0단계: OpenRCT2 + 플러그인 설치, 공원 로드
 - [x] 0단계 확인: `python scripts/00_smoke.py`
-- [x] 2단계: `python scripts/01_extract_geometry.py` -> geometry.json (636개 조합, origin z=30)
+- [x] 2단계: `python scripts/01_extract_geometry.py` -> geometry.json (652개 조합, origin z=30
+      + UP25/DOWN25류 16개는 실측값으로 수동 보충, 아래 TODO 참고)
 - [x] 1단계: `python scripts/02_hello_coaster.py` -> 평점 출력 (흥미 0.27/격렬 0.30/멀미 0.18)
 - [ ] 3단계: `python scripts/03_collect.py --n 1000`
 - [ ] 4단계: 학습 코드 (model/ 아래, 아직 tokenizer.py만 있음)
@@ -64,8 +65,20 @@ OpenRCT2용 "우든 롤러코스터 트랙 생성 플러그인"을 만들고, �
 - extract origin은 지면(z=14)보다 너무 높이 띄우면 "지지대 최대 높이" 제한에 걸린다.
   현재 z=30 (지면+16) 사용 중 — 내리막 조각이 땅에 안 박힐 정도로만 살짝 띄운 값.
 
-## 다음에 할 일
-`scripts/00_smoke.py`부터 순서대로 돌린다. `02_hello_coaster.py`의 SEQUENCE는
-아직 폐곡선이 안 맞을 가능성이 높다 — 출력된 "끝위치 vs 시작"을 보고
-직선 구간 개수를 조정하면 된다. geometry.json이 나오면 그 계산을 파이썬으로
-자동화할 수 있다.
+## 다음에 할 일 (여기서부터 이어서)
+0~1단계 끝났고, 지금은 **3단계 (`scripts/03_collect.py`) 검증 중.**
+
+- `gen/random_walk.py`를 getValidNextPieces 우회 방식(직접 시도 후 실패하면 다음
+  후보)으로 고쳐놨고, `rct/env.py`의 `evaluate()`도 startRideTest 실패 시 배치
+  전체가 죽던 버그를 고쳐뒀다.
+- 마지막으로 `python scripts/03_collect.py --n 10 --out data/test_dataset.jsonl`을
+  돌리던 중 세션이 끝났음 (게임/코드는 정상 상태로 둠, 도중에 중단만 시킴).
+  **여기부터 다시 돌려서 성공률/속도를 확인하면 된다.**
+- 성공률이 너무 낮으면 `--width`/`--depth`/`--height` 넉넉하게 늘리거나
+  `gen/random_walk.py`의 `max_pieces`/`max_undo`를 조정.
+- 성공률 괜찮으면 `--n 1000`으로 본 수집 진행 -> `data/dataset.jsonl`.
+- 그다음이 4단계(학습 코드, model/ 아래 tokenizer.py만 있는 상태).
+
+시작 전 체크리스트: OpenRCT2를 `openrct2.com`으로 실행하고 평지 샌드박스 공원을
+로드해뒀는지 먼저 확인 (플러그인 패치는 `Documents/OpenRCT2/plugin/ridecreation-api.js`에
+이미 적용돼 있음 — 플러그인을 재설치하지 않았다면 그대로 유지됨).
