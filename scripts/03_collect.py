@@ -42,7 +42,10 @@ def sample_config():
     lift = random.randint(3, 9)          # 더 높이면 격렬도가 10을 넘어 무용지물
     wander = random.randint(10, min(60, width + depth))
     close = max(20, (width + depth) // 2 + 8)
-    return width, depth, lift, wander, close
+    # 뱅크(커빙) 성향. 켜면 좌우G가 내려가 격렬도가 낮은 순한 트랙, 끄면
+    # 맨턴 위주로 격렬한 트랙이 나온다. 둘 다 있어야 조건부 생성이 배운다.
+    banked = random.random() < 0.5
+    return width, depth, lift, wander, close, banked
 
 
 os.makedirs(os.path.dirname(args.out), exist_ok=True)
@@ -52,11 +55,11 @@ with RCTClient.discover(ports=ports) as c, open(args.out, "a", encoding="utf-8")
     c.set_game_speed(args.speed)
     env = WoodenCoasterEnv(c, origin=origin)
     for i in range(args.n):
-        width, depth, lift, wander, close = sample_config()
+        width, depth, lift, wander, close, banked = sample_config()
         bounds = Bounds.plot(origin, DIRECTION, width, depth, args.height)
         seq = generate_episode(env, sim, bounds, max_pieces=250,
                                lift_pieces=lift, wander_steps=wander,
-                               close_budget=close)
+                               close_budget=close, banked=banked)
         if seq is None:
             print(f"[{i+1}/{args.n}] 폐곡선 실패 (w={width} d={depth} lift={lift})")
             continue
@@ -69,11 +72,14 @@ with RCTClient.discover(ports=ports) as c, open(args.out, "a", encoding="utf-8")
             "sequence": seq, "stats": stats,
             "bounds": {"width": width, "depth": depth, "height": args.height},
             "lift_pieces": lift,
+            "banked": banked,
             "station": 3,
         }, ensure_ascii=False) + "\n")
         fp.flush()
         ok += 1
         print(f"[{i+1}/{args.n}] E={stats['excitement']:.2f} "
               f"I={stats['intensity']:.2f} N={stats['nausea']:.2f} "
-              f"({len(seq)}조각, w={width} d={depth} lift={lift})")
+              f"좌우G={stats['maxLateralGs']:.2f} "
+              f"({len(seq)}조각, w={width} d={depth} lift={lift}, "
+              f"{'뱅크' if banked else '맨턴'})")
 print(f"\n수집 완료: {ok}/{args.n} -> {args.out}")

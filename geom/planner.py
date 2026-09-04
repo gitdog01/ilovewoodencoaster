@@ -39,12 +39,73 @@ class State:
         return (self.x, self.y, self.z)
 
 
+def _footprint_deltas(dx, dy, dz):
+    """조각이 실제로 깔리는 타일들 (진입 타일 기준 상대 좌표).
+
+    직선 조각은 한 칸만 전진하니 도착 타일 하나면 되는데, 5칸/3칸 턴은 호를
+    그리며 여러 타일을 쓸고 지나간다. 플러그인이 조각의 타일 블록 목록을
+    안 내려주므로(getAllTrackSegments 에 없다) 진입/진출 타일의 바운딩 박스로
+    보수적으로 잡는다. 실제보다 몇 타일 더 잡지만, 덜 잡아서 게임이 배치를
+    거부하는 것보다 낫다.
+
+    진입 타일 (0, 0, 0) 은 뺀다. 그 자리는 직전 조각이 이미 차지하고 있어서
+    (정상적으로 공유하는 타일이다) 넣어두면 모든 턴이 항상 충돌로 걸린다.
+    """
+    if abs(dx) + abs(dy) <= 1:
+        return ((dx, dy, dz),)
+    x0, x1 = sorted((0, dx))
+    y0, y1 = sorted((0, dy))
+    z0, z1 = sorted((0, dz))
+    return tuple((a, b, c)
+                 for a in range(x0, x1 + 1)
+                 for b in range(y0, y1 + 1)
+                 for c in range(z0, z1 + 1)
+                 if (a, b, c) != (0, 0, 0))
+
+
+class Occupancy:
+    """트랙이 이미 쓴 타일. 자기충돌 검사용.
+
+    z 를 정확히 비교하면 안 된다. 게임은 트랙 위아래로 여유(clearance)를
+    요구해서, 한두 칸 차이로 겹쳐 있는 트랙도 배치를 거부한다. ztol 은
+    "이만큼 안에 다른 트랙이 있으면 겹친 걸로 본다"는 세로 여유.
+    """
+
+    __slots__ = ("cells", "ztol", "_band")
+
+    def __init__(self, ztol=2, cells=(), _raw=None):
+        self.ztol = ztol
+        self._band = tuple(range(-ztol, ztol + 1))
+        self.cells = set(_raw) if _raw is not None else set()
+        if _raw is None:
+            self.add(cells)
+
+    def blocked(self, cells):
+        # 조회가 A* 안쪽 루프라 여기서는 셀당 딱 한 번만 본다.
+        have = self.cells
+        for c in cells:
+            if c in have:
+                return True
+        return False
+
+    def add(self, cells):
+        # 넣을 때 위아래 여유만큼 미리 펼쳐 둔다 (넣는 일은 훨씬 드물다).
+        have = self.cells
+        for x, y, z in cells:
+            for dz in self._band:
+                have.add((x, y, z + dz))
+
+    def copy(self):
+        return Occupancy(self.ztol, _raw=self.cells)
+
+
 class Planner:
     def __init__(self, sim, piece_types):
         self.sim = sim
         self.pieces = tuple(piece_types)
         # (진입방향, 진입경사, 진입뱅크) -> 붙일 수 있는 조각들
         self.by_entry = {}
+        self.templates = {}
         self.max_xy = 1
         self.max_axis = 1
         self.max_dz = 1
@@ -55,6 +116,13 @@ class Planner:
                     continue
                 k = (d, e["beginSlope"], e["beginBank"])
                 self.by_entry.setdefault(k, []).append((t, e))
+                # 진입 타일 기준 상대 좌표로 미리 굳혀 둔다. A* 안쪽 루프에서
+                # geometry dict 를 다시 뒤지지 않으려고.
+                self.templates.setdefault(k, []).append((
+                    t, e["dx"], e["dy"], e["dz"], e["outDirection"],
+                    e["endSlope"], e["endBank"],
+                    _footprint_deltas(e["dx"], e["dy"], e["dz"]),
+                ))
                 self.max_xy = max(self.max_xy, abs(e["dx"]) + abs(e["dy"]))
                 self.max_axis = max(self.max_axis, abs(e["dx"]), abs(e["dy"]))
                 self.max_dz = max(self.max_dz, abs(e["dz"]))
@@ -65,10 +133,16 @@ class Planner:
                      e["outDirection"], e["endSlope"], e["endBank"])
 
     def successors(self, s: State):
-        """(조각타입, 다음상태) 목록. 게임의 연결 규칙을 그대로 적용."""
+        """(조각타입, 다음상태, 점유타일) 목록. 게임의 연결 규칙을 그대로 적용."""
+        x, y, z = s.x, s.y, s.z
         out = []
-        for t, e in self.by_entry.get((s.direction, s.slope, s.bank), ()):
-            out.append((t, self.apply(s, e)))
+        for t, dx, dy, dz, od, es, eb, deltas in self.templates.get(
+                (s.direction, s.slope, s.bank), ()):
+            out.append((
+                t,
+                State(x + dx, y + dy, z + dz, od, es, eb),
+                tuple((x + a, y + b, z + c) for a, b, c in deltas),
+            ))
         return out
 
     def h(self, s: State, goal: State):
@@ -86,13 +160,18 @@ class Planner:
 
     # -- 탐색 ------------------------------------------------------------
     def plan(self, start: State, goal: State, bounds: Bounds = None,
-             occupied=None, budget=40, max_expand=60000):
-        """start 에서 goal 로 정확히 도달하는 최단 조각열. 실패하면 None.
+             occupied=None, budget=40, max_expand=60000, exclude=()):
+        """start 에서 goal 로 정확히 도달하는 조각열. 실패하면 None.
 
-        occupied 는 이미 쓴 (x, y, z) 셀 집합 -- 자기 자신과 겹치지 않게 한다.
+        occupied 는 Occupancy -- 자기 자신과 겹치지 않게 한다.
         budget 은 쓸 수 있는 최대 조각 수(=탐색 깊이 상한).
+        exclude 는 아예 안 쓸 조각들.
+
+        조각별 비용을 매겨 "싼 길"을 찾게도 해봤는데, 균일 비용일 때 잘 먹던
+        가지치기가 풀려서 탐색이 몇십 배로 터졌다. 선호는 exclude 로 조각을
+        빼고 두 번 부르는 쪽이 훨씬 싸게 먹힌다 (호출부 참고).
         """
-        occupied = occupied or set()
+        occupied = occupied if occupied is not None else Occupancy()
         if self.h(start, goal) > budget:
             return None
 
@@ -100,7 +179,7 @@ class Planner:
         best = {start.key(): 0}
         expand = 0
         while openq:
-            f, g, _, s, path = heapq.heappop(openq)
+            f, g, _k, s, path = heapq.heappop(openq)
             if s.key() == goal.key():
                 return list(path)
             if g > best.get(s.key(), 1 << 30):
@@ -110,10 +189,12 @@ class Planner:
                 return None
             if g >= budget:
                 continue
-            for t, nxt in self.successors(s):
+            for t, nxt, cells in self.successors(s):
+                if t in exclude:
+                    continue
                 if bounds is not None and not _in_bounds(bounds, nxt):
                     continue
-                if nxt.cell() in occupied and nxt.key() != goal.key():
+                if nxt.key() != goal.key() and occupied.blocked(cells):
                     continue
                 ng = g + 1
                 if ng >= best.get(nxt.key(), 1 << 30):
@@ -136,23 +217,23 @@ class Planner:
         """
         s = start
         seq = []
-        occ = set(occupied)
+        occ = occupied.copy()
         for _ in range(steps):
             cands = []
-            for t, nxt in self.successors(s):
+            for t, nxt, cells in self.successors(s):
                 if not _in_bounds(bounds, nxt):
                     continue
-                if nxt.cell() in occ:
+                if occ.blocked(cells):
                     continue
                 if self.h(nxt, goal) > reserve:
                     continue
-                cands.append((t, nxt))
+                cands.append((t, nxt, cells))
             if not cands:
                 break
-            ws = [weights.get(t, 1) for t, _ in cands]
-            t, nxt = random.choices(cands, weights=ws, k=1)[0]
+            ws = [weights.get(t, 1) for t, _, _ in cands]
+            t, nxt, cells = random.choices(cands, weights=ws, k=1)[0]
             seq.append(t)
-            occ.add(nxt.cell())
+            occ.add(cells)
             s = nxt
         return seq, s, occ
 

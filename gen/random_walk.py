@@ -14,20 +14,50 @@
 
 import random
 
-from geom.planner import Planner, State, _in_bounds
+from geom.planner import Occupancy, Planner, State, _in_bounds
 from geom.simulator import Bounds, TrackSimulator
 from rct import constants as C
 from rct.env import WoodenCoasterEnv
 
-# 우든 코스터에서 자주 쓰이는 조각 위주로 가중치
+# 우든 코스터에서 자주 쓰이는 조각 위주로 가중치.
+#
+# 뱅크(커빙) 없는 턴은 좌우G를 그대로 손님한테 넘겨서 격렬도를 급격히 올린다.
+# 실측: 평턴 위주 트랙의 좌우G가 1.75~2.87 (실제 롤코 목표는 1.5 이하),
+# 그 트랙들의 격렬도가 6.4~9.1까지 올라갔다. 그래서 턴은 기본적으로
+# "뱅크 진입 -> 뱅크턴 -> 뱅크 해제"로 돌게 가중치를 몰아준다.
 WEIGHTS = {
     C.FLAT: 3, C.FLAT_TO_UP25: 2, C.UP25: 2, C.UP25_TO_FLAT: 2,
     C.FLAT_TO_DOWN25: 3, C.DOWN25: 3, C.DOWN25_TO_FLAT: 3,
-    C.TURN_L5: 3, C.TURN_R5: 3, C.TURN_L3: 2, C.TURN_R3: 2,
-    C.BANKED_TURN_L5: 2, C.BANKED_TURN_R5: 2,
-    C.FLAT_TO_LEFT_BANK: 1, C.FLAT_TO_RIGHT_BANK: 1,
-    C.LEFT_BANK_TO_FLAT: 1, C.RIGHT_BANK_TO_FLAT: 1,
+    # 커빙 없는 맨턴 -- 좌우G의 주범이라 최소한만 남긴다.
+    C.TURN_L5: 1, C.TURN_R5: 1, C.TURN_L3: 1, C.TURN_R3: 1,
+    # 뱅크턴. 3칸 뱅크턴(44/45)은 원래 목록에 아예 빠져 있었다.
+    C.BANKED_TURN_L5: 6, C.BANKED_TURN_R5: 6,
+    C.BANKED_TURN_L3: 4, C.BANKED_TURN_R3: 4,
+    # 뱅크 진출입. 이게 낮으면 뱅크턴을 쓰고 싶어도 진입을 못 한다.
+    C.FLAT_TO_LEFT_BANK: 4, C.FLAT_TO_RIGHT_BANK: 4,
+    C.LEFT_BANK_TO_FLAT: 3, C.RIGHT_BANK_TO_FLAT: 3,
+    C.LEFT_BANK: 1, C.RIGHT_BANK: 1,
 }
+
+# 커빙 없는 맨턴. 좌우G를 그대로 손님한테 넘겨 격렬도를 밀어올린다.
+#
+# WEIGHTS 는 무작위 워크에만 먹고 A* 에는 안 먹는다. 그런데 맨턴은 1조각,
+# 뱅크턴은 진입+턴+해제로 3조각이라 최단 경로를 찾는 A* 는 항상 맨턴을 고른다.
+# 조각별 비용을 매겨봤더니 균일 비용일 때 잘 먹던 가지치기가 풀려 탐색이
+# 몇십 배로 터졌다. 그래서 "맨턴 빼고 한 번, 안 되면 넣고 한 번"으로 간다.
+PLAIN_TURNS = frozenset((C.TURN_L5, C.TURN_R5, C.TURN_L3, C.TURN_R3))
+
+# 맨턴을 선호하는 반대쪽 성향. 뱅크는 격렬도를 흥미도와 맞바꾸는 레버라
+# (실측: 같은 리프트 높이에서 좌우G 3.02/격렬 9.22/흥미 5.21 <-> 좌우G 0.96/
+# 격렬 2.81/흥미 2.60), 데이터셋은 양쪽 영역을 다 덮어야 조건부 생성이
+# "격렬도 6짜리 흥미도 최대" 같은 요청을 배울 수 있다.
+WEIGHTS_PLAIN = dict(WEIGHTS)
+WEIGHTS_PLAIN.update({
+    C.TURN_L5: 4, C.TURN_R5: 4, C.TURN_L3: 3, C.TURN_R3: 3,
+    C.BANKED_TURN_L5: 1, C.BANKED_TURN_R5: 1,
+    C.BANKED_TURN_L3: 1, C.BANKED_TURN_R3: 1,
+    C.FLAT_TO_LEFT_BANK: 1, C.FLAT_TO_RIGHT_BANK: 1,
+})
 
 _PLANNERS = {}
 
@@ -56,43 +86,54 @@ def _exits(P, s, bounds, occupied):
     RCT 조각은 예외 없이 최소 한 칸 전진하므로, 부지 끝에서 벽을 마주보면
     제자리 회전이 불가능해 그대로 막다른 길이 된다. 0이면 여기서 끝.
     """
-    return sum(1 for _t, nxt in P.successors(s)
-               if _in_bounds(bounds, nxt) and nxt.cell() not in occupied)
+    return sum(1 for _t, nxt, cells in P.successors(s)
+               if _in_bounds(bounds, nxt) and not occupied.blocked(cells))
 
 
 def _follow(P, s, types, bounds, occupied):
-    """정해진 조각열을 시뮬레이터로 따라간다. 규칙/부지 위반이면 None."""
-    cells = []
+    """정해진 조각열을 시뮬레이터로 따라간다.
+
+    (다음상태, 새로 점유한 타일들) 또는 규칙/부지/충돌 위반이면 (None, None).
+    occupied 는 건드리지 않는다 -- 호출부가 성공했을 때만 합친다.
+    """
+    used = Occupancy(occupied.ztol)
     for t in types:
-        nxt = next((c for tt, c in P.successors(s) if tt == t), None)
-        if nxt is None or not _in_bounds(bounds, nxt) or nxt.cell() in occupied:
+        hit = next(((nxt, cs) for tt, nxt, cs in P.successors(s) if tt == t), None)
+        if hit is None:
             return None, None
-        occupied = occupied | {nxt.cell()}
-        cells.append(nxt.cell())
+        nxt, cs = hit
+        if not _in_bounds(bounds, nxt) or occupied.blocked(cs) or used.blocked(cs):
+            return None, None
+        used.add(cs)
         s = nxt
-    return s, cells
+    return s, used.cells
 
 
 def plan_episode(sim: TrackSimulator, station_end: State, goal: State,
                  bounds: Bounds, lift_pieces=None, wander_steps=None,
-                 close_budget=24, headroom=2, attempts=40):
+                 close_budget=24, headroom=2, ztol=2, banked=True,
+                 attempts=40):
     """게임 없이 폐곡선 시퀀스 하나를 설계한다. [(조각, 체인), ...] 또는 None.
 
     goal 은 스테이션 첫 조각의 진입점 -- 여기로 정확히 돌아오면 폐곡선이다.
     구조는 실제 우든 코스터를 따라 리프트 -> 첫 낙하 -> 본체 -> 스테이션 복귀.
+
+    banked=True 면 턴을 되도록 뱅크(커빙)로 돌아 좌우G와 격렬도를 낮춘다.
+    False 면 맨턴 위주로 격렬한 트랙을 뽑는다.
     """
     P = planner_for(sim)
+    weights = WEIGHTS if banked else WEIGHTS_PLAIN
 
     for _ in range(attempts):
         n_lift = lift_pieces if lift_pieces is not None else random.randint(4, 14)
         lift = _lift(n_lift)
 
         # 1) 체인리프트 언덕. 부지를 벗어나면 이 시도는 버린다.
-        occupied = {station_end.cell(), goal.cell()}
+        occupied = Occupancy(ztol, [station_end.cell(), goal.cell()])
         top, cells = _follow(P, station_end, [t for t, _ in lift], bounds, occupied)
         if top is None:
             continue
-        occupied.update(cells)
+        occupied.add(cells)
 
         # 2) 리프트 꼭대기보다 높이 올라가면 열차가 못 넘는다 -> 천장을 여기로.
         #    마찰 손실이 있으니 headroom 만큼 더 낮게 잡는다.
@@ -107,16 +148,20 @@ def plan_episode(sim: TrackSimulator, station_end: State, goal: State,
             # 낙하 자체는 꼭대기에서 시작하므로 rb(천장 낮춤)가 아니라 원래 부지로 잰다.
             s, cells = _follow(P, top, drop, bounds, occupied)
             # 부지 끝까지 내려가면 벽을 마주본 채 막다른 길이 된다 -> 더 짧게.
-            if s is not None and _exits(P, s, rb, occupied | set(cells)) < 2:
-                s = None
+            if s is not None:
+                after = occupied.copy()
+                after.add(cells)
+                if _exits(P, s, rb, after) < 2:
+                    s = None
             n_drop -= 1
         if s is None:
             continue
-        occ0 = occupied | set(cells)
+        occ0 = occupied.copy()
+        occ0.add(cells)
 
         # 4) 무작위 워크로 본체 모양을 만든다.
         steps = wander_steps if wander_steps is not None else random.randint(15, 60)
-        body, _, _ = P.wander(s, goal, rb, occ0, steps, WEIGHTS,
+        body, _, _ = P.wander(s, goal, rb, occ0, steps, weights,
                               reserve=close_budget)
 
         # 5) 스테이션까지 정확히 닫는다. 안 닫히면 워크를 되감으며 재시도.
@@ -127,7 +172,16 @@ def plan_episode(sim: TrackSimulator, station_end: State, goal: State,
             st, cells = _follow(P, s, head, rb, occ0)
             if st is None:
                 continue
-            tail = P.plan(st, goal, rb, occ0 | set(cells), budget=close_budget)
+            occ1 = occ0.copy()
+            occ1.add(cells)
+            # 맨턴 없이 닫아보고, 정 안 되면 그때만 허용한다.
+            # (뱅크턴은 진입/해제까지 3조각이라 예산을 좀 더 줘야 닫힌다.)
+            tail = None
+            if banked:
+                tail = P.plan(st, goal, rb, occ1, budget=close_budget + 8,
+                              exclude=PLAIN_TURNS)
+            if tail is None:
+                tail = P.plan(st, goal, rb, occ1, budget=close_budget)
             if tail is not None:
                 return ([(t, True) for t, _ in lift]
                         + [(t, False) for t in drop + head + tail])

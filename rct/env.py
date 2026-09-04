@@ -101,12 +101,8 @@ class WoodenCoasterEnv:
             return None
         deadline = time.time() + timeout
         while time.time() < deadline:
-            s = self.c.stats(self.ride_id)
+            s = self.c.measurements(self.ride_id)
             if s and s.get("excitement", 0) > 0:
-                return {
-                    "excitement": s["excitement"],
-                    "intensity": s["intensity"],
-                    "nausea": s["nausea"],
-                }
+                return s
             time.sleep(poll)
         return None

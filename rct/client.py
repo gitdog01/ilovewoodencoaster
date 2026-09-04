@@ -155,3 +155,11 @@ class RCTClient:
 
     def stats(self, ride_id):
         return self.call("getRideStats", {"rideId": ride_id}, strict=False)
+
+    def measurements(self, ride_id):
+        """평점 + 주행 실측값 (G, 에어타임, 속도, 낙하 수 ...).
+
+        getRideStats 의 상위 집합. 격렬도가 왜 튀었는지는 평점 3개만 봐서는
+        알 수 없고 maxLateralGs / maxPositiveVerticalGs 를 봐야 한다.
+        """
+        return self.call("getRideMeasurements", {"rideId": ride_id}, strict=False)
