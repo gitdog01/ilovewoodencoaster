@@ -142,6 +142,14 @@ class RCTClient:
     def place_entrance_exit(self, ride_id):
         return self.call("placeEntranceExit", {"rideId": ride_id}, strict=False)
 
+    def set_game_speed(self, speed=8):
+        """게임 시뮬레이션 속도. 8이면 라이드 테스트가 몇 초 만에 끝난다.
+
+        평점은 시뮬레이션 시간 ~35초가 지나야 나오는데, 그동안 파이썬은
+        그냥 기다리기만 한다. 대량 수집에서는 여기가 전체 시간의 대부분.
+        """
+        return self.call("setGameSpeed", {"speed": speed}, strict=False)
+
     def start_test(self, ride_id):
         return self.call("startRideTest", {"rideId": ride_id})
 

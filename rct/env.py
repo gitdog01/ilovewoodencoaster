@@ -84,8 +84,12 @@ class WoodenCoasterEnv:
         return placed, self.complete
 
     # -- 평가 ------------------------------------------------------------
-    def evaluate(self, timeout=90, poll=1.0):
-        """테스트 주행 후 평점을 기다린다. 실패 시 None."""
+    def evaluate(self, timeout=30, poll=0.25):
+        """테스트 주행 후 평점을 기다린다. 실패 시 None.
+
+        속도 8이면 평점이 나오기까지 실제로 몇 초면 되므로, timeout 은
+        "열차가 한 바퀴를 못 돈다"를 빨리 포기하는 값으로 잡는다.
+        """
         if not self.complete:
             return None
         try:

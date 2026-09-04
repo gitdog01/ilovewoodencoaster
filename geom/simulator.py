@@ -40,6 +40,28 @@ class Bounds:
                    y - depth // 2, y + depth // 2,
                    z - z_slack, z + height)
 
+    @classmethod
+    def plot(cls, origin, direction, width, depth, height, front=3):
+        """스테이션을 부지 가장자리에 두는 부지.
+
+        around()는 origin(=스테이션 진입점)을 한가운데 두는데, 트랙은 스테이션이
+        바라보는 방향으로만 뻗어나가므로 절반이 낭비되고 리프트 언덕이 곧장
+        부지 밖으로 나간다. 여기서는 width 를 "진행 방향 깊이", depth 를
+        "좌우 폭"으로 보고 스테이션 뒤로는 front 칸만 남긴다.
+
+        direction: 0=-x, 1=+y, 2=+x, 3=-y (게임의 방향 인코딩).
+        """
+        x, y, z = origin
+        if direction in (0, 2):
+            sx = -1 if direction == 0 else 1
+            xs = sorted((x - sx * front, x + sx * width))
+            ys = (y - depth // 2, y + depth // 2)
+        else:
+            sy = 1 if direction == 1 else -1
+            ys = sorted((y - sy * front, y + sy * width))
+            xs = (x - depth // 2, x + depth // 2)
+        return cls(xs[0], xs[1], ys[0], ys[1], z, z + height)
+
     def contains(self, p: Pos):
         return (self.x_min <= p.x <= self.x_max
                 and self.y_min <= p.y <= self.y_max
