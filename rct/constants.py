@@ -44,7 +44,11 @@ BANKED_TURN_L3 = 44
 BANKED_TURN_R3 = 45
 
 STATION_PIECES = (BEGIN_STATION, MIDDLE_STATION, END_STATION)
-CHAINABLE = (FLAT_TO_UP25, UP25, UP60)
+# 체인리프트를 걸 수 있는 조각. UP25_TO_FLAT 이 빠져 있었는데, 리프트 언덕의
+# 마지막 조각(경사 -> 평지 전환)이라 gen/random_walk.py 의 _lift() 가 항상
+# 체인으로 놓는다. 실제로 수집한 33171개 전부에 (UP25_TO_FLAT, chain=True) 가
+# 들어있어서 토크나이저가 어휘에 없는 조합이라며 죽었다.
+CHAINABLE = (FLAT_TO_UP25, UP25, UP60, UP25_TO_FLAT)
 
 NAMES = {
     FLAT: "Flat", END_STATION: "EndStation", BEGIN_STATION: "BeginStation",
