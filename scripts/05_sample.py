@@ -26,6 +26,7 @@ import torch
 from geom.planner import Occupancy, State
 from geom.simulator import Bounds, TrackSimulator
 from gen.random_walk import PLAIN_TURNS, planner_for
+from model.constrain import BoundsConstraint
 from model.gpt import GPT, GPTConfig
 from model.tokenizer import TrackTokenizer
 
@@ -70,11 +71,13 @@ def check(seq, sim, bounds):
     return n_ok, inside, closed
 
 
-def sample(model, tok, cond, n, device, temperature=0.9, top_k=None):
+def sample(model, tok, cond, n, device, temperature=0.9, top_k=None,
+           constraint=None):
     ids = [tok.stoi["<bos>"]] + tok.encode_condition(**cond) + [tok.stoi["<sep>"]]
     x = torch.tensor([ids] * n, dtype=torch.long, device=device)
     out = model.generate(x, max_new_tokens=120, temperature=temperature,
-                         top_k=top_k, eos_id=tok.stoi["<eos>"])
+                         top_k=top_k, eos_id=tok.stoi["<eos>"],
+                         allowed_fn=constraint)
     # 배치로 뽑으면 generate 는 "전부" EOS 를 낼 때만 멈춘다. 행마다 자기 EOS
     # 에서 잘라야 한다 -- 안 자르면 EOS 뒤에 계속 붙은 토큰까지 세어서 길이가
     # 학습 분포(중앙 47)의 두 배로 나오고 유효성도 엉뚱하게 낮게 찍힌다.
@@ -94,6 +97,10 @@ def main():
     ap.add_argument("--n", type=int, default=40, help="조건마다 뽑을 개수")
     ap.add_argument("--temperature", type=float, default=0.9)
     ap.add_argument("--top-k", type=int, default=None)
+    ap.add_argument("--constrained", action="store_true",
+                    help="매 스텝 부지 밖/충돌 조각을 마스킹한다.")
+    ap.add_argument("--require-closed", action="store_true",
+                    help="스테이션에 닫히기 전에는 EOS 도 막는다 (--constrained 필요).")
     args = ap.parse_args()
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -116,11 +123,19 @@ def main():
         ("흥미도 높게", dict(exc=5.5, int=6.0, nau=3.5, latg=2.5, **site)),
     ]
 
-    print(f"\n조건마다 {args.n}개 (temperature={args.temperature})\n")
+    start = State(ORIGIN[0], ORIGIN[1] + 3, ORIGIN[2], DIRECTION, 0, 0)
+    goal = State(ORIGIN[0], ORIGIN[1], ORIGIN[2], DIRECTION, 0, 0)
+    mode = "constrained (부지/충돌 마스킹)" if args.constrained else "제약 없음"
+    print(f"\n조건마다 {args.n}개 (temperature={args.temperature}, {mode})\n")
     print(f"{'조건':<14} {'길이':>5} {'맨턴':>5} {'뱅크턴':>6} {'리프트':>6} "
           f"{'규칙OK':>7} {'부지내':>6} {'폐곡선':>6}")
     for label, cond in trials:
-        seqs = sample(model, tok, cond, args.n, device, args.temperature, args.top_k)
+        con = None
+        if args.constrained:
+            con = BoundsConstraint(sim, tok, bounds, start, goal, args.n,
+                                   allow_eos_only_when_closed=args.require_closed)
+        seqs = sample(model, tok, cond, args.n, device, args.temperature,
+                      args.top_k, constraint=con)
         lens, plains, banks, lifts = [], [], [], []
         rule_ok = inside_ok = closed_ok = 0
         for s in seqs:
