@@ -49,9 +49,13 @@ def junction(link, target):
                    check=True, capture_output=True)
 
 
-def make_instance(root, index, port):
+def make_instance(root, index, port, force=False):
     inst = os.path.join(root, f"inst{index}")
     if os.path.exists(inst):
+        if not force:
+            # 실행 중인 인스턴스를 지우면 플러그인 파일이 통째로 날아간다.
+            # 수집 도중에 인스턴스를 추가하는 게 흔한 경우라 기본은 건너뛰기.
+            return None
         shutil.rmtree(inst)
     os.makedirs(inst)
 
@@ -87,6 +91,12 @@ def main():
     ap.add_argument("--n", type=int, default=4, help="만들 인스턴스 개수")
     ap.add_argument("--root", default=DEFAULT_ROOT, help="인스턴스 폴더를 둘 위치")
     ap.add_argument("--base-port", type=int, default=8080)
+    ap.add_argument("--start", type=int, default=0,
+                    help="inst 번호 시작값. 돌고 있는 인스턴스는 놔두고 뒤에 더 "
+                         "붙일 때 쓴다 (--start 4 --n 8 -> inst4..inst11).")
+    ap.add_argument("--force", action="store_true",
+                    help="이미 있는 인스턴스 폴더도 지우고 다시 만든다. "
+                         "실행 중인 인스턴스에는 쓰지 말 것.")
     args = ap.parse_args()
 
     if not os.path.isfile(PLUGIN_SRC):
@@ -95,12 +105,19 @@ def main():
         sys.exit(f"OpenRCT2 유저 데이터 폴더가 없습니다: {BASE}")
 
     os.makedirs(args.root, exist_ok=True)
-    for i in range(args.n):
+    made = skipped = 0
+    for i in range(args.start, args.start + args.n):
         port = args.base_port + i
-        inst = make_instance(args.root, i, port)
-        print(f"[setup] inst{i}  포트 {port}  {inst}")
+        inst = make_instance(args.root, i, port, args.force)
+        if inst is None:
+            print(f"[setup] inst{i}  이미 있음 -> 건너뜀 (다시 만들려면 --force)")
+            skipped += 1
+        else:
+            print(f"[setup] inst{i}  포트 {port}  {inst}")
+            made += 1
 
-    print(f"\n{args.n}개 준비 완료. 다음:  python scripts/run_instances.py --n {args.n}")
+    print(f"\n새로 만든 것 {made}개, 건너뛴 것 {skipped}개. 다음: "
+          f"python scripts/run_instances.py --start {args.start} --n {args.n}")
 
 
 if __name__ == "__main__":

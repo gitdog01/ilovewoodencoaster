@@ -7,3 +7,4 @@ data/*.jsonl
 *.pt
 *.ckpt
 .DS_Store
+data/*.log

@@ -26,7 +26,7 @@ DEFAULT_PARK = os.path.join(BASE, "scenario", "내 새 시나리오.park")
 CREATE_NEW_CONSOLE = 0x00000010
 
 
-def listening_ports(base_port, n):
+def listening_ports(first_port, n):
     """netstat 으로 base_port..base_port+n-1 의 리슨 상태를 읽는다.
 
     포트 하나에 PID가 여러 개 나오면 그게 바로 중복 bind 사고다 (Windows의
@@ -35,7 +35,7 @@ def listening_ports(base_port, n):
     """
     out = subprocess.run(["netstat", "-ano"], capture_output=True, text=True).stdout
     found = {}
-    wanted = set(range(base_port, base_port + n))
+    wanted = set(range(first_port, first_port + n))
     for line in out.splitlines():
         m = re.search(r"\s127\.0\.0\.1:(\d+)\s+\S+\s+LISTENING\s+(\d+)", line)
         if m and int(m.group(1)) in wanted:
@@ -48,11 +48,17 @@ def main():
     ap.add_argument("--n", type=int, default=4)
     ap.add_argument("--root", default=DEFAULT_ROOT)
     ap.add_argument("--base-port", type=int, default=8080)
+    ap.add_argument("--start", type=int, default=0,
+                    help="inst 번호 시작값. 돌고 있는 인스턴스는 놔두고 뒤에 더 "
+                         "띄울 때 쓴다 (--start 4 --n 8 -> inst4..inst11).")
     ap.add_argument("--park", default=DEFAULT_PARK)
     ap.add_argument("--no-park", action="store_true",
                     help="공원을 자동으로 열지 않는다 (직접 로드할 때).")
     ap.add_argument("--timeout", type=int, default=120,
                     help="포트가 다 뜰 때까지 기다리는 최대 초.")
+    ap.add_argument("--headless", action="store_true",
+                    help="창 없이 띄운다. 실측상 속도는 창 있는 것과 같지만 "
+                         "화면과 메모리를 안 쓴다 (인스턴스를 많이 띄울 때).")
     ap.add_argument("--check", action="store_true",
                     help="띄우지 않고 지금 떠 있는 포트 상태만 확인한다.")
     args = ap.parse_args()
@@ -62,7 +68,8 @@ def main():
     if not args.check and not args.no_park and not os.path.isfile(args.park):
         sys.exit(f"공원 파일이 없습니다: {args.park}")
 
-    for i in range(0 if args.check else args.n):
+    first = args.base_port + args.start
+    for i in range(args.start, args.start + (0 if args.check else args.n)):
         inst = os.path.join(args.root, f"inst{i}")
         if not os.path.isdir(inst):
             sys.exit(f"인스턴스 폴더가 없습니다: {inst}\n"
@@ -71,6 +78,8 @@ def main():
         if not args.no_park:
             # -n: 시나리오를 인스턴스 폴더에 새로 설치하지 말고 그대로 연다.
             cmd += [args.park, "-n"]
+        if args.headless:
+            cmd += ["--headless"]
         cmd += [f"--user-data-path={inst}"]
         subprocess.Popen(cmd, creationflags=CREATE_NEW_CONSOLE)
         print(f"[run] inst{i} 실행 (포트 {args.base_port + i} 예정)")
@@ -79,7 +88,7 @@ def main():
         print(f"\n포트가 올라오길 기다리는 중 (최대 {args.timeout}초)...")
     deadline = time.time() + (0 if args.check else args.timeout)
     while True:
-        found = listening_ports(args.base_port, args.n)
+        found = listening_ports(first, args.n)
         if len(found) == args.n or time.time() >= deadline:
             break
         time.sleep(2)
@@ -87,7 +96,7 @@ def main():
     print("\n" + "=" * 46)
     ok = True
     for i in range(args.n):
-        port = args.base_port + i
+        port = first + i
         pids = found.get(port, [])
         if len(pids) == 1:
             print(f"  {port}  PID {pids[0]}")
@@ -104,11 +113,13 @@ def main():
         print(f"\n[OK] 포트 {args.n}개가 서로 다른 프로세스에 갈렸습니다. 병렬 수집 가능.")
         print("\n터미널을 여러 개 열어서:")
         for i in range(args.n):
-            print(f"  python scripts/03_collect.py --port {args.base_port + i} "
-                  f"--seed {i} --n 250 --out data/part_{args.base_port + i}.jsonl")
+            print(f"  python scripts/03_collect.py --port {first + i} "
+                  f"--seed {args.start + i} --n 250 "
+                  f"--out data/part_{first + i}.jsonl")
     else:
         print("\n[!] 아직 다 안 떴습니다. 각 창에서 공원이 로드됐는지 확인하고 다시 이 스크립트의")
-        print("    확인 부분만 돌리려면: python scripts/run_instances.py --n {} --check".format(args.n))
+        print(f"    확인 부분만 돌리려면: python scripts/run_instances.py "
+              f"--start {args.start} --n {args.n} --check")
         sys.exit(1)
 
 
