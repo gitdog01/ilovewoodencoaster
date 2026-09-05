@@ -27,7 +27,9 @@ OpenRCT2용 "우든 롤러코스터 트랙 생성 플러그인"을 만들고, �
 ## 의존하는 외부 물건
 - OpenRCT2 0.5.0 이상 (quickjs-ng 스크립팅 엔진 필요)
 - `markusklock/openrct2-ridecreation-api` 플러그인 — TCP JSON API.
-  8080부터 시작해 빈 포트를 잡는다. `rct/client.py`의 `discover()`가 자동 탐색.
+  **패치된 정본이 리포의 `plugin/ridecreation-api.js` 에 있다** (아래 패치 항목 참고).
+  포트는 **인스턴스마다 고정**이다 (원본의 빈 포트 자동 탐색은 Windows에서
+  동작하지 않는다 — 아래 "병렬 수집" 참고). 단일 인스턴스면 8080.
 - Windows에서 플러그인 로그를 보려면 `openrct2.exe`가 아니라 `openrct2.com` 실행.
   플러그인은 타이틀 화면이 아니라 **공원 로드 후** 시작된다.
 
@@ -54,9 +56,10 @@ OpenRCT2용 "우든 롤러코스터 트랙 생성 플러그인"을 만들고, �
       + UP25/DOWN25류 16개는 실측값으로 수동 보충, 아래 TODO 참고)
 - [x] 1단계: `python scripts/02_hello_coaster.py` -> 평점 출력 (흥미 0.27/격렬 0.30/멀미 0.18)
 - [~] 3단계: `python scripts/03_collect.py --n 1000` — 파이프라인 검증 끝.
-      **성공률 41/42, 트랙당 4.3초** (12개 52초). 1000개면 단일 인스턴스로 ~72분.
-      평점 범위 E 0.28~5.16 / I 0.32~9.22 / 좌우G 1.11~2.88.
-      본 수집만 돌리면 된다.
+      **성공률 41/42, 트랙당 4.3초** (12개 52초). 평점 범위 E 0.28~5.16 /
+      I 0.32~9.22 / 좌우G 1.11~2.88.
+      2026-09-05: 인스턴스 4개 병렬로 본 수집(250 x 4) 실행. 실측 트랙당 1.7초
+      (단일 4.3초 대비 2.5배 — 4배가 아닌 건 CPU 경합). 1000개에 ~28분.
 - [ ] 4단계: 학습 코드 (model/ 아래, 아직 tokenizer.py만 있음)
 - [ ] 5단계: OpenRCT2 플러그인 UI
 
@@ -66,7 +69,13 @@ OpenRCT2용 "우든 롤러코스터 트랙 생성 플러그인"을 만들고, �
   로컬 설치본(`Documents/OpenRCT2/plugin/ridecreation-api.js`)의 `computeValidNextPieces`를
   직접 패치해서 해결 (해당 함수 존재 여부를 체크하고 없으면 validPieces만 빈 배열로 처리,
   좌표(position/nextEndpoint)는 그대로 반환). 원본은 `ridecreation-api.js.bak`으로 보관.
-  플러그인을 재설치/업데이트하면 이 패치가 사라지니 다시 적용해야 함.
+- **플러그인 패치 정본은 이제 리포의 `plugin/ridecreation-api.js` 다.** 패치가 두 개
+  쌓였고(위의 `getNextValidSegments` 가드 + 포트 고정), 플러그인을 재설치하면 둘 다
+  날아가기 때문에 버전 관리되는 곳에 옮겼다. 재설치했다면 이 파일을
+  `Documents/OpenRCT2/plugin/` 에 덮어쓰고, 병렬용 사본은
+  `python scripts/setup_instances.py --n 4` 로 다시 만들면 된다.
+- 포트 고정 패치: 원본의 "8080부터 빈 포트 탐색" 루프를 `server.listen(DEFAULT_PORT)`
+  하나로 바꿨다. 이유는 아래 "병렬 수집" 참고 (Windows SO_REUSEADDR).
 - `rct/client.py`의 `place()`는 이제 조각의 `beginZ`(진입 z 오프셋, 8단위=tileCoordinateZ 1칸)를
   자동 보정한다. 내리막류 조각은 baseZ가 슬로프 낮은 쪽 기준이라 이 보정이 필요함.
 - `01_extract_geometry.py`는 **항상 평지 스테이션 바로 다음에서만** 각 조각을 테스트하므로,
@@ -109,8 +118,9 @@ OpenRCT2용 "우든 롤러코스터 트랙 생성 플러그인"을 만들고, �
 (예전: 0/3 성공, 트랙당 33초, E 0.27~1.19)
 
 ### 바로 다음 할 일
-1. **`--n 1000` 본 수집** -> `data/dataset.jsonl` (아래 병렬 수집 참고).
-   단일 인스턴스 ~72분, 4개 띄우면 ~20분.
+1. **`--n 1000` 본 수집** — 2026-09-05에 4개 병렬로 실행함 (아래 병렬 수집 참고).
+   끝나면 `cat data/part_*.jsonl > data/dataset.jsonl` 로 합칠 것.
+   더 필요하면 `--seed` 를 안 쓴 값으로 바꿔서 더 돌리면 된다.
 2. 그다음이 4단계(학습 코드, model/ 아래 tokenizer.py만 있는 상태).
    조건부 프리픽스에 흥미/격렬/멀미 버킷 말고 **좌우G 버킷**도 넣을지 검토.
    격렬도의 실질적 원인이라 모델이 잡기 더 쉬운 신호일 수 있다.
@@ -151,14 +161,64 @@ OpenRCT2용 "우든 롤러코스터 트랙 생성 플러그인"을 만들고, �
 **4. 부지 끝에서 벽을 마주보면 그대로 막다른 길.** RCT 조각은 예외 없이 최소
 한 칸 전진해서 제자리 회전이 없기 때문. `_exits()` 로 착지 지점에 여유를 요구한다.
 
-시작 전 체크리스트: OpenRCT2를 `openrct2.com`으로 실행하고 평지 샌드박스 공원을
-로드해뒀는지 먼저 확인 (플러그인 패치는 `Documents/OpenRCT2/plugin/ridecreation-api.js`에
-이미 적용돼 있음 — 플러그인을 재설치하지 않았다면 그대로 유지됨).
+시작 전 체크리스트:
+- 병렬로 돌릴 거면 `python scripts/run_instances.py --n 4` 하나면 끝난다
+  (실행 + 공원 자동 로드 + 포트가 갈렸는지 확인까지). 단일이면 `openrct2.com`으로
+  직접 실행하고 평지 샌드박스 공원 로드.
+- 플러그인 패치는 `Documents/OpenRCT2/plugin/` 과 각 인스턴스 폴더에 적용돼 있다.
+  플러그인을 재설치했다면 리포의 `plugin/ridecreation-api.js` 로 덮어쓰고
+  `setup_instances.py` 를 다시 돌릴 것.
+
+콘솔 인코딩 주의: 한국어 Windows 콘솔은 cp949라 **em-dash(`—`) 같은 문자를
+`print()` 하면 `UnicodeEncodeError`로 스크립트가 통째로 죽는다.** 실제로
+`03_collect.py` 의 실패 분기 em-dash 하나 때문에 수집이 몇 초 만에 죽었다
+(성공 분기에는 없어서 첫 실패까지는 멀쩡해 보인다). 출력 문자열에는 ASCII 문장부호만
+쓰고, 오래 도는 스크립트에는 `sys.stdout.reconfigure(errors="replace")` 를 걸어둘 것.
 
 ## 병렬 수집 (여러 OpenRCT2 인스턴스)
-`03_collect.py`에 `--port` 옵션 추가해둠. 플러그인은 8080부터 시작해 빈 포트를
-자동으로 잡으므로, OpenRCT2 창을 여러 개 띄우면(각각 평지 샌드박스 공원 로드)
-순서대로 8080, 8081, 8082... 를 잡는다. 그 다음 터미널을 여러 개 열어서:
+
+### 창을 그냥 여러 개 띄우면 안 된다 (2026-09-05 실측)
+플러그인 원본은 8080부터 올라가며 빈 포트를 찾게 돼 있지만 **Windows에서는
+전부 8080에 겹친다.** OpenRCT2가 리슨 소켓에 `SO_REUSEADDR`를 켜는데, Windows의
+`SO_REUSEADDR`는 리눅스와 달리 **다른 프로세스가 이미 리슨 중인 포트에 대한
+bind를 그대로 허용한다.** 예외가 안 나니 탐색 루프가 한 번도 위로 안 올라간다.
+인스턴스 3개를 띄웠더니 netstat에 8080이 PID 3개로 찍혔다.
+
+이 상태로 `--port 8080/8081/8082`를 돌리면 8081·8082는 연결 실패하고 세 클라이언트가
+**같은 게임 하나**에 붙는다. `env.reset()`이 `delete_all_rides()`를 부르므로 서로의
+트랙을 지운다 — 속도 이득 0에 데이터 오염.
+
+게임 안에서 클라이언트 소켓으로 미리 찔러보는 우회도 안 된다.
+`network.createSocket()`의 connect 콜백이 이 빌드에서 안 불린다 (프로브가 항상
+타임아웃 -> "비었네" 오판). 그래서 **포트를 인스턴스마다 못 박는 방식**을 쓴다.
+
+### 세팅 (한 번만)
+```bash
+python scripts/setup_instances.py --n 4
+```
+`~/Documents/rct-instances/inst0..3` 을 만든다. 각 폴더는 OpenRCT2의
+`--user-data-path` 로 물릴 유저 데이터 폴더이고, 그 안의 플러그인 사본에
+`DEFAULT_PORT`가 8080/8081/8082/8083으로 각각 박혀 있다. 무거운 공용 자산
+(scenario, object, objdata, track 등)은 복사가 아니라 **정션**이라 원본 샌드박스
+맵을 고치면 인스턴스가 자동으로 따라온다 (정션은 관리자 권한 불필요).
+덤으로 `debug_replay.parkrep` / autosave 를 인스턴스끼리 겹쳐 쓰던 것도 사라진다.
+
+플러그인 정본을 고쳤으면 `setup_instances.py`를 다시 돌려야 사본에 반영된다.
+
+### 실행
+```bash
+python scripts/run_instances.py --n 4
+```
+4개를 각각 자기 콘솔 창에 띄우고 **공원까지 자동으로 로드한 뒤**
+(`scenario/내 새 시나리오.park`), netstat으로 포트->PID 표를 찍어서 실제로
+갈렸는지 보여준다. 포트 하나에 PID가 둘 이상 나오면 그게 위의 중복 bind 사고다.
+띄우지 않고 지금 상태만 보려면 `--check`, 공원을 직접 로드하려면 `--no-park`.
+
+검증됨 (2026-09-05): inst1이 8081을 잡고 5초 만에 공원 로드 완료. 8080에 라이드
+0개인 상태에서 8081에 스테이션을 놓으니 8081만 1개 — 서로 다른 게임이 맞다.
+
+### 수집
+그 다음 터미널을 여러 개 열어서:
 
 ```bash
 python scripts/03_collect.py --port 8080 --seed 0 --n 250 --out data/part_8080.jsonl
@@ -166,8 +226,9 @@ python scripts/03_collect.py --port 8081 --seed 1 --n 250 --out data/part_8081.j
 python scripts/03_collect.py --port 8082 --seed 2 --n 250 --out data/part_8082.jsonl
 python scripts/03_collect.py --port 8083 --seed 3 --n 250 --out data/part_8083.jsonl
 ```
-처럼 동시에 실행하면 인스턴스 수만큼 빨라진다. `--port` 생략하면 기존처럼
-첫 빈 포트에 자동 접속 (단일 인스턴스일 때는 그대로 쓰면 됨).
+처럼 동시에 실행하면 인스턴스 수만큼 빨라진다. **병렬일 때 `--port`는 필수다**
+(생략하면 `discover()`가 8080부터 훑어서 전부 같은 인스턴스에 붙는다).
+단일 인스턴스면 생략해도 된다.
 `--seed` 는 인스턴스마다 다르게 준다 (생략하면 PID로 시드하므로 보통은 알아서
 갈리지만, 명시하면 재현 가능해진다).
 끝나고 `data/part_*.jsonl` 을 `cat`으로 합치면 됨 (전부 `data/*.jsonl` 이라

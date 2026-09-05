@@ -23,8 +23,12 @@ class RCTClient:
     def discover(cls, host=DEFAULT_HOST, ports=PORT_RANGE, verbose=True):
         """플러그인이 잡은 포트를 자동으로 찾는다.
 
-        플러그인은 8080부터 시작해 사용 중이면 위로 올라가며 첫 빈 포트를 잡는다.
-        headless 인스턴스를 여러 개 띄울 때도 이 함수로 각각 찾으면 된다.
+        범위를 훑어서 **처음 응답하는** 인스턴스에 붙는다. 단일 인스턴스용이다.
+
+        병렬 수집에는 쓰면 안 된다: 인스턴스를 여러 개 띄워도 discover()는 전부
+        같은(가장 낮은) 포트에 붙어버린다. 병렬일 때는 `ports=[8081]` 처럼 포트를
+        직접 지정할 것 (03_collect.py 의 `--port`). 인스턴스별 포트 고정은
+        scripts/setup_instances.py 가 만들어준다.
         """
         for port in ports:
             try:
