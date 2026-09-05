@@ -48,7 +48,10 @@ def main():
     for i in range(args.n):
         port = args.base_port + args.start + i
         out = os.path.join(REPO, "data", f"{args.tag}_{port}.jsonl")
-        cmd = [sys.executable, COLLECT, "--port", str(port),
+        # -u: 버퍼링을 끈다. 안 그러면 파일로 리다이렉트한 stdout 이 몇 KB씩
+        # 모였다가 나가서, 수집기가 멎었을 때 로그가 텅 빈 채로 남는다
+        # (실제로 멎은 수집기를 진단하려다 로그가 비어 있어서 못 썼다).
+        cmd = [sys.executable, "-u", COLLECT, "--port", str(port),
                "--seed", str(args.seed_base + i), "--n", str(args.each),
                "--speed", str(args.speed), "--out", out]
         # 출력은 각자 로그 파일로. 12개가 한 콘솔에 섞이면 못 읽는다.

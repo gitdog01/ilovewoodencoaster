@@ -13,6 +13,7 @@
 """
 
 import random
+import time
 
 from geom.planner import Occupancy, Planner, State, _in_bounds
 from geom.simulator import Bounds, TrackSimulator
@@ -112,7 +113,7 @@ def _follow(P, s, types, bounds, occupied):
 def plan_episode(sim: TrackSimulator, station_end: State, goal: State,
                  bounds: Bounds, lift_pieces=None, wander_steps=None,
                  close_budget=24, headroom=2, ztol=2, banked=True,
-                 attempts=40, strict_banked=True):
+                 attempts=40, strict_banked=True, time_budget=20.0):
     """게임 없이 폐곡선 시퀀스 하나를 설계한다. [(조각, 체인), ...] 또는 None.
 
     goal 은 스테이션 첫 조각의 진입점 -- 여기로 정확히 돌아오면 폐곡선이다.
@@ -124,11 +125,21 @@ def plan_episode(sim: TrackSimulator, station_end: State, goal: State,
     strict_banked=True 면 banked=True 일 때 맨턴 폴백을 막아 두 영역이 확실히
     갈리게 한다 (아래 닫기 단계 주석 참고). 성공률은 떨어지지만 설계는
     오프라인이라 CPU만 더 쓴다.
+
+    time_budget 은 이 설계에 쓸 최대 시간(초). 안 걸어두면 어떤 부지/리프트
+    조합은 영원히 안 닫히면서 attempts(40) x 리와인드(5) x A* 1초 = 200초를
+    태우고, generate_episode 가 그걸 build_attempts 번 반복해서 트랙 하나에
+    20분을 쓴다 (실측: 수집기 25개 중 6개가 이 상태로 CPU만 태우고 있었다).
+    설계 시간의 81%가 실패하는 A* 호출에 들어가므로, 안 되는 판은 빨리 접고
+    다른 설정으로 새로 뽑는 게 훨씬 싸다.
     """
     P = planner_for(sim)
     weights = WEIGHTS if banked else WEIGHTS_PLAIN
+    deadline = time.monotonic() + time_budget if time_budget else None
 
     for _ in range(attempts):
+        if deadline and time.monotonic() > deadline:
+            return None
         n_lift = lift_pieces if lift_pieces is not None else random.randint(4, 14)
         lift = _lift(n_lift)
 
@@ -172,6 +183,8 @@ def plan_episode(sim: TrackSimulator, station_end: State, goal: State,
         for back in (0, 2, 4, 7, 11):
             if back > len(body):
                 break
+            if deadline and time.monotonic() > deadline:
+                return None
             head = body[:len(body) - back] if back else body
             st, cells = _follow(P, s, head, rb, occ0)
             if st is None:
