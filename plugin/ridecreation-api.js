@@ -4,6 +4,15 @@ function main() {
     // Configuration flags - Edit these to change behavior
     const DEFAULT_PORT = 8080;        // The port this instance serves. See the bind block below.
 
+    // 트랙 생성기 UI <-> 파이썬 데몬 사이의 우편함.
+    // 모델은 파이썬(PyTorch)에 있고 여기는 quickjs 라 직접 호출을 못 한다.
+    // 이 빌드에서는 network.createSocket() 의 connect 콜백이 안 와서 플러그인이
+    // 바깥으로 거는 연결도 못 믿는다. 그래서 방향을 뒤집어, UI 는 요청을 여기
+    // 담아두기만 하고 파이썬 데몬이 폴링해서 가져간다 (검증된 방향은 파이썬 -> 게임).
+    let generationRequest = null;
+    let generationStatus = "대기 중";
+    let statusLabel = null;
+
     // Create TCP listener
     const server = network.createListener();
 
@@ -66,6 +75,74 @@ function main() {
         return;
     }
     console.log(`Ride API server listening on port ${DEFAULT_PORT}.`);
+
+    // -- 트랙 생성기 UI ----------------------------------------------------
+    // headless 인스턴스에는 ui 가 없다 (대량 수집용). 있을 때만 붙인다.
+    if (typeof ui !== "undefined" && ui && ui.registerMenuItem) {
+        // 좌우G 는 소수라 스피너로 못 넣는다. 10배로 잡고 나눠서 보낸다.
+        const vals = { exc: 5, int: 8, nau: 3, latg: 25, width: 28, depth: 24, n: 16 };
+        const WINDOW_ID = "wooden-coaster-generator";
+
+        function openGeneratorWindow() {
+            const existing = ui.getWindow(WINDOW_ID);
+            if (existing) { existing.bringToFront(); return; }
+
+            let y = 20;
+            const widgets = [];
+            const rows = [
+                ["exc",   "흥미도 목표",   0, 10],
+                ["int",   "격렬도 목표",   0, 15],
+                ["nau",   "멀미도 목표",   0, 10],
+                ["latg",  "좌우G x10",     5, 40],
+                ["width", "부지 가로",    12, 40],
+                ["depth", "부지 세로",    12, 40],
+                ["n",     "후보 수",       4, 48],
+            ];
+            for (const [key, label, lo, hi] of rows) {
+                widgets.push({ type: "label", x: 10, y: y + 2, width: 90,
+                               height: 14, text: label });
+                widgets.push({
+                    type: "spinner", name: "sp_" + key, x: 105, y: y,
+                    width: 80, height: 14, text: String(vals[key]),
+                    onIncrement: () => {
+                        vals[key] = Math.min(hi, vals[key] + 1);
+                        ui.getWindow(WINDOW_ID).findWidget("sp_" + key).text = String(vals[key]);
+                    },
+                    onDecrement: () => {
+                        vals[key] = Math.max(lo, vals[key] - 1);
+                        ui.getWindow(WINDOW_ID).findWidget("sp_" + key).text = String(vals[key]);
+                    },
+                });
+                y += 18;
+            }
+            widgets.push({
+                type: "button", name: "btn_go", x: 10, y: y + 4,
+                width: 175, height: 16, text: "트랙 생성",
+                onClick: () => {
+                    generationRequest = {
+                        exc: vals.exc, int: vals.int, nau: vals.nau,
+                        latg: vals.latg / 10,
+                        width: vals.width, depth: vals.depth, n: vals.n,
+                        requestedAt: date.ticksElapsed,
+                    };
+                    generationStatus = "요청 보냄 -- 파이썬 데몬 대기";
+                    const w = ui.getWindow(WINDOW_ID);
+                    if (w) w.findWidget("lbl_status").text = generationStatus;
+                },
+            });
+            widgets.push({ type: "label", name: "lbl_status", x: 10, y: y + 26,
+                           width: 175, height: 14, text: generationStatus });
+
+            const win = ui.openWindow({
+                classification: WINDOW_ID, title: "우든 코스터 생성기",
+                width: 200, height: y + 48, widgets: widgets,
+            });
+            statusLabel = win.findWidget("lbl_status");
+        }
+
+        ui.registerMenuItem("우든 코스터 생성기", openGeneratorWindow);
+        console.log("Track generator UI registered (map menu).");
+    }
 
     // Promise-wrapped context.executeAction. Rejects on result.error so
     // failed actions surface as exceptions in async handlers.
@@ -166,7 +243,23 @@ function main() {
             return { executed: params.command };
         }],
         ["captureImage",         params => handleCaptureImage(params)],
+        // -- 트랙 생성기 UI 다리 --------------------------------------------
+        // 모델은 파이썬(PyTorch)에 있고 여기는 quickjs 라 직접 호출을 못 한다.
+        // 이 빌드에서는 network.createSocket() 의 connect 콜백이 안 와서
+        // 플러그인에서 바깥으로 나가는 연결도 못 믿는다. 그래서 방향을 뒤집어,
+        // UI 는 요청을 여기 담아두기만 하고 파이썬 데몬이 폴링해서 가져간다.
+        ["getGenerationRequest", async () => ({ request: generationRequest })],
+        ["setGenerationStatus",  async params => {
+            generationStatus = (params && params.status) || "";
+            if (statusLabel) statusLabel.text = generationStatus;
+            return { status: generationStatus };
+        }],
+        ["clearGenerationRequest", async () => {
+            generationRequest = null;
+            return { cleared: true };
+        }],
     ]);
+
 
     /**
      * Dispatches a JSON request to its endpoint handler.
