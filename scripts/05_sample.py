@@ -53,7 +53,7 @@ def check(seq, sim, bounds):
     반환: (규칙상_이어지는_조각수, 부지_안인가, 스테이션에_닫혔는가)
     """
     P = planner_for(sim)
-    s, goal = station_states(sim, ORIGIN, DIRECTION, 3)
+    s, goal, _tiles = station_states(sim, ORIGIN, DIRECTION, 3)
     occ = Occupancy(2)
     n_ok, inside = 0, True
     from geom.planner import _in_bounds
@@ -123,7 +123,7 @@ def main():
         ("흥미도 높게", dict(exc=5.5, int=6.0, nau=3.5, latg=2.5, **site)),
     ]
 
-    start, goal = station_states(sim, ORIGIN, DIRECTION, 3)
+    start, goal, _st = station_states(sim, ORIGIN, DIRECTION, 3)
     mode = "constrained (부지/충돌 마스킹)" if args.constrained else "제약 없음"
     print(f"\n조건마다 {args.n}개 (temperature={args.temperature}, {mode})\n")
     print(f"{'조건':<14} {'길이':>5} {'맨턴':>5} {'뱅크턴':>6} {'리프트':>6} "

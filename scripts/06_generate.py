@@ -56,7 +56,7 @@ def main():
     bounds = Bounds.plot(ORIGIN, DIRECTION, args.width, args.depth, 60)
     site = {"width": args.width, "depth": args.depth, "height": 60, "station": 3}
     # 좌표는 가정하지 말고 시뮬레이터로 계산한다 (방향 0 은 -x 로 진행한다).
-    start, goal = station_states(sim, ORIGIN, DIRECTION, site["station"])
+    start, goal, st_tiles = station_states(sim, ORIGIN, DIRECTION, site["station"])
 
     # 요청 목표값. 게임이 실제로 이 근처를 내주는지가 시험 대상이다.
     targets = [
@@ -77,7 +77,8 @@ def main():
     for label, cond in targets:
         seqs = generate_closed(model, tok, cond, sim, bounds, start, goal,
                                args.n, device, close_budget=args.close_budget,
-                               temperature=args.temperature)
+                               temperature=args.temperature,
+                               station_tiles=st_tiles)
         lens = [len(s) for s in seqs]
         print(f"\n[{label}] 요청 exc={cond['exc']} int={cond['int']} "
               f"latg={cond['latg']}")

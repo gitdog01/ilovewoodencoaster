@@ -41,15 +41,20 @@ def station_states(sim, origin, direction, station_length=3):
     # 검증: origin (67,66,14) dir=0 에서 3칸 -> (64,66,14) 로, 게임이 내려주는
     # env.reset() 반환값과 정확히 일치한다.
     p = Pos(origin[0], origin[1], origin[2], direction)
+    tiles = [(p.x, p.y, p.z)]
     for _ in range(station_length):
         nxt = sim.advance(p, C.FLAT)
         if nxt is None:
             raise RuntimeError("스테이션을 따라갈 수 없습니다")
         p = nxt
+        tiles.append((p.x, p.y, p.z))
     # 스테이션은 평지/뱅크 없음이라 slope=bank=0.
     start = State(p.x, p.y, p.z, p.direction, 0, 0)
     goal = State(origin[0], origin[1], origin[2], direction, 0, 0)
-    return start, goal
+    # tiles: 플랫폼이 실제로 깔린 타일 전부. 여기를 점유로 안 잡으면 A* 꼬리가
+    # 플랫폼 위를 지나가는 설계를 내놓고 게임이 배치를 거부한다 (실측: 배치
+    # 실패 12건 중 7건이 스테이션 타일 위였다).
+    return start, goal, tiles
 
 
 def _follow(P, s, seq, bounds, occupied):
@@ -70,7 +75,8 @@ def _follow(P, s, seq, bounds, occupied):
 
 def generate_closed(model, tok, cond, sim, bounds, start: State, goal: State,
                     n, device, close_budget=24, temperature=0.9, top_k=None,
-                    max_new_tokens=120, rewinds=(0, 2, 4, 7, 11)):
+                    max_new_tokens=120, rewinds=(0, 2, 4, 7, 11),
+                    station_tiles=()):
     """조건을 주고 폐곡선 트랙 n개를 시도한다. [(조각, 체인), ...] 목록을 반환.
 
     닫는 데 실패한 후보는 결과에서 빠진다 (best-of-N 이므로 몇 개만 살아도 된다).
@@ -80,8 +86,9 @@ def generate_closed(model, tok, cond, sim, bounds, start: State, goal: State,
               + [tok.stoi["<sep>"]])
     x = torch.tensor([prefix] * n, dtype=torch.long, device=device)
 
+    seed = list(station_tiles) or [start.cell(), goal.cell()]
     con = BoundsConstraint(sim, tok, bounds, start, goal, n,
-                           reserve=close_budget)
+                           reserve=close_budget, seed_cells=seed)
     out = model.generate(x, max_new_tokens=max_new_tokens,
                          temperature=temperature, top_k=top_k,
                          eos_id=tok.stoi["<eos>"], allowed_fn=con)
@@ -95,15 +102,15 @@ def generate_closed(model, tok, cond, sim, bounds, start: State, goal: State,
         seq = tok.decode(body)
         if not seq:
             continue
-        closed = _close(P, seq, goal, start, bounds, close_budget, rewinds)
+        closed = _close(P, seq, goal, start, bounds, close_budget, rewinds, seed)
         if closed is not None:
             results.append(closed)
     return results
 
 
-def _close(P, seq, goal, start, bounds, close_budget, rewinds):
+def _close(P, seq, goal, start, bounds, close_budget, rewinds, seed_cells):
     """LM 이 뽑은 본체 뒤에 A* 꼬리를 붙인다. 실패하면 None."""
-    base = Occupancy(2, [start.cell(), goal.cell()])
+    base = Occupancy(2, list(seed_cells))
     for back in rewinds:
         if back >= len(seq):
             break

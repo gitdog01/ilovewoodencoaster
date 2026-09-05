@@ -29,7 +29,7 @@ class BoundsConstraint:
 
     def __init__(self, sim, tok, bounds, start: State, goal: State,
                  n_rows, ztol=2, allow_eos_only_when_closed=False,
-                 reserve=None):
+                 reserve=None, seed_cells=None):
         self.P = planner_for(sim)
         self.tok = tok
         self.bounds = bounds
@@ -50,8 +50,8 @@ class BoundsConstraint:
             self.tokens_of.setdefault(t, []).append(tid)
 
         self.state = [start] * n_rows
-        self.occ = [Occupancy(ztol, [start.cell(), goal.cell()])
-                    for _ in range(n_rows)]
+        seed = list(seed_cells) if seed_cells else [start.cell(), goal.cell()]
+        self.occ = [Occupancy(ztol, list(seed)) for _ in range(n_rows)]
         self.consumed = [None] * n_rows   # 각 행에서 이미 반영한 토큰 개수
         self.dead = [False] * n_rows
 
