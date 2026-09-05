@@ -123,3 +123,26 @@ class TrackSimulator:
         drops = abs(pos.z - anchor.z) // z_unit
         turns = 0 if pos.direction == anchor.direction else 1
         return remaining >= manhattan + drops + turns
+
+
+def station_tiles(sim, origin, direction, station_length=3):
+    """스테이션 플랫폼이 깔린 타일 전부 + 끝 위치.
+
+    반환: (타일목록, 끝 Pos). 스테이션 조각(1/2/3)은 geometry.json 에 없어서
+    (01_extract_geometry.py 가 스테이션 "다음" 조각만 테스트한다) 기하학적으로
+    동일한 FLAT 으로 따라간다. 검증: origin (67,66,14) dir=0 에서 3칸 ->
+    (64,66,14) 로, 게임의 env.reset() 반환값과 정확히 일치한다.
+
+    이 타일들을 점유로 안 잡으면 트랙 꼬리가 플랫폼 위를 지나는 설계가 나오고
+    게임이 배치를 거부한다 (실측: 배치 실패의 절반 이상이 이것이었다).
+    """
+    from rct import constants as C
+    p = Pos(origin[0], origin[1], origin[2], direction)
+    tiles = [(p.x, p.y, p.z)]
+    for _ in range(station_length):
+        nxt = sim.advance(p, C.FLAT)
+        if nxt is None:
+            raise RuntimeError("스테이션을 따라갈 수 없습니다")
+        p = nxt
+        tiles.append((p.x, p.y, p.z))
+    return tiles, p

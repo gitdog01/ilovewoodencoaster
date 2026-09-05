@@ -101,9 +101,32 @@ def main():
 
     print(f"데몬 시작 (device={device}). 게임에서 지도 메뉴 -> "
           f"'우든 코스터 생성기' 를 열어 사용하세요. Ctrl+C 로 종료.")
+
+    def reconnect():
+        """게임을 껐다 켜도 데몬은 살아있게 한다.
+
+        실제로 채점 도중 게임 창을 닫았더니 ConnectionAbortedError 로 데몬이
+        통째로 죽었다. 유저가 게임을 다시 켜면 알아서 다시 붙어야 한다.
+        """
+        nonlocal client, env
+        while True:
+            try:
+                client = RCTClient.discover(ports=ports, verbose=False)
+                client.set_game_speed(8)
+                env = WoodenCoasterEnv(client, origin=ORIGIN)
+                print("  게임에 다시 연결됨")
+                return
+            except Exception:
+                time.sleep(3)
+
     try:
         while True:
-            resp = client.call("getGenerationRequest", strict=False)
+            try:
+                resp = client.call("getGenerationRequest", strict=False)
+            except (OSError, Exception) as e:
+                print(f"  연결 끊김 ({type(e).__name__}) -- 재접속 대기")
+                reconnect()
+                continue
             req = (resp or {}).get("request")
             if req:
                 print(f"\n요청 받음: {req}")
@@ -114,8 +137,11 @@ def main():
                     # 요청 하나가 죽어도 데몬은 살아있어야 한다.
                     msg = f"오류: {type(e).__name__}: {e}"
                     print(f"  {msg}")
-                    client.call("setGenerationStatus", {"status": msg[:80]},
-                                strict=False)
+                    try:
+                        client.call("setGenerationStatus",
+                                    {"status": msg[:80]}, strict=False)
+                    except Exception:
+                        reconnect()      # 게임이 내려간 경우
                 if args.once:
                     break
             time.sleep(args.poll)

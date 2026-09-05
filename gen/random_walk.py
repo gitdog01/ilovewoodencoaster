@@ -16,7 +16,7 @@ import random
 import time
 
 from geom.planner import Occupancy, Planner, State, _in_bounds
-from geom.simulator import Bounds, TrackSimulator
+from geom.simulator import Bounds, TrackSimulator, station_tiles
 from rct import constants as C
 from rct.env import WoodenCoasterEnv
 
@@ -113,7 +113,8 @@ def _follow(P, s, types, bounds, occupied):
 def plan_episode(sim: TrackSimulator, station_end: State, goal: State,
                  bounds: Bounds, lift_pieces=None, wander_steps=None,
                  close_budget=24, headroom=2, ztol=2, banked=True,
-                 attempts=40, strict_banked=True, time_budget=20.0):
+                 attempts=40, strict_banked=True, time_budget=20.0,
+                 station_cells=()):
     """게임 없이 폐곡선 시퀀스 하나를 설계한다. [(조각, 체인), ...] 또는 None.
 
     goal 은 스테이션 첫 조각의 진입점 -- 여기로 정확히 돌아오면 폐곡선이다.
@@ -144,7 +145,12 @@ def plan_episode(sim: TrackSimulator, station_end: State, goal: State,
         lift = _lift(n_lift)
 
         # 1) 체인리프트 언덕. 부지를 벗어나면 이 시도는 버린다.
-        occupied = Occupancy(ztol, [station_end.cell(), goal.cell()])
+        # 스테이션 플랫폼 타일 전부를 점유로 잡는다. 예전에는 양 끝 두 칸만
+        # 잡아서 플랫폼 중간이 비어 보였고, 트랙 꼬리가 그 위를 지나는 설계를
+        # 내놓아 게임이 배치를 거부했다 (하이브리드 경로에서 실측: 배치 성공률
+        # 60% -> 77%, 스테이션 타일 실패 7/12 -> 0/7).
+        occupied = Occupancy(ztol, list(station_cells)
+                             or [station_end.cell(), goal.cell()])
         top, cells = _follow(P, station_end, [t for t, _ in lift], bounds, occupied)
         if top is None:
             continue
@@ -228,7 +234,11 @@ def generate_episode(env: WoodenCoasterEnv, sim: TrackSimulator, bounds: Bounds,
         a = env.anchor
         goal = State(a["x"], a["y"], a["z"], a["direction"], 0, 0)
 
-        seq = plan_episode(sim, station_end, goal, bounds, **kw)
+        # 게임이 실제로 깐 스테이션 타일을 점유로 넘긴다 (좌표 가정 금지).
+        cells, _end = station_tiles(sim, (a["x"], a["y"], a["z"]),
+                                    a["direction"], station_length=3)
+        seq = plan_episode(sim, station_end, goal, bounds,
+                           station_cells=cells, **kw)
         if seq is None:
             if trace is not None:
                 trace.append(("plan_fail", 0, 0))

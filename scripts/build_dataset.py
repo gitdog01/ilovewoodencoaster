@@ -47,22 +47,27 @@ GENERATIONS = {
     "part5_": ("gen2", "b7d0a1e", "위와 동일"),
     "part6_": ("gen3", "66939a4", "설계 시간상한 추가"),
     "run2_":  ("gen3", "66939a4", "설계 시간상한 추가"),
+    "run3_":  ("gen3", "346330f", "meta.gen 기록 시작. 분포는 gen3 와 동일"),
+    "run4_":  ("gen4", "", "스테이션 플랫폼 타일을 점유로 반영 (배치 성공률 개선)"),
 }
 # 커밋 -> 세대. 레코드에 meta.gen 이 있을 때 세대를 붙이는 데 쓴다.
-COMMIT_TO_GEN = {c: g for g, c, _ in GENERATIONS.values()}
-GEN_ORDER = ["gen1", "gen2", "gen3"]
+COMMIT_TO_GEN = {c: g for g, c, _ in GENERATIONS.values() if c}
+GEN_ORDER = ["gen1", "gen2", "gen3", "gen4"]
 
 
 def generation_of(record, filename):
     """레코드의 세대. meta.gen 이 있으면 그걸 쓰고, 없으면 파일 이름으로 추정."""
     gen = (record.get("meta") or {}).get("gen")
-    if gen:
-        return COMMIT_TO_GEN.get(gen.replace("+dirty", ""), gen)
+    if gen and gen.replace("+dirty", "") in COMMIT_TO_GEN:
+        return COMMIT_TO_GEN[gen.replace("+dirty", "")]
+    # meta.gen 이 없거나 표에 없는 커밋이면 파일 이름으로 떨어진다. 새 세대를
+    # 만들 때 커밋 해시를 미리 알 수 없으므로(태깅 커밋 자체가 해시를 바꾼다)
+    # 접두사 쪽이 실제로 쓰이는 경로다. meta.gen 은 정확한 커밋 기록용.
     base = os.path.basename(filename)
     for prefix, (g, _commit, _desc) in GENERATIONS.items():
         if base.startswith(prefix):
             return g
-    return "unknown"
+    return gen or "unknown"
 
 
 def main():
