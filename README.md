@@ -32,7 +32,15 @@ python scripts/00_smoke.py            # 연결 확인
 python scripts/01_extract_geometry.py # geometry.json 생성
 python scripts/02_hello_coaster.py    # 코스터 하나 짓고 평점
 python scripts/03_collect.py --n 100  # 데이터 수집
+python scripts/build_dataset.py       # part 파일 -> dataset.jsonl (세대 태깅 + dedupe)
+python scripts/04_train.py            # 조건부 생성 모델 학습 (RTX 5070 기준 1.2분)
+python scripts/05_sample.py --constrained   # 조건이 먹히는지 평가
+python scripts/07_bestof.py --exc 5 --int 8 --latg 2.5   # 목표 -> 트랙 하나
+python scripts/08_daemon.py           # 게임 안 UI 를 받는 데몬 (5단계)
 ```
+
+`07_bestof.py` 가 전체 흐름이다: LM 이 조건부로 후보를 뽑고 -> A* 가 스테이션까지
+닫고 -> 게임이 채점하고 -> 제약(격렬도 상한) 아래에서 최고를 고른다.
 
 ### 병렬 수집
 
