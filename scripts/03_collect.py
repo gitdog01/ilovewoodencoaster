@@ -44,7 +44,11 @@ def sample_config():
     """에피소드 한 개의 부지/모양 설정. 넓게 흔들어 평점 분포를 벌린다."""
     width = random.choice([20, 24, 28, 32, 36])
     depth = random.choice([16, 20, 24, 28, 32])
-    lift = random.randint(3, 9)          # 더 높이면 격렬도가 10을 넘어 무용지물
+    # 리프트 높이. 946개 수집물을 보니 흥미도가 리프트 6에서 포화됐고, 격렬도가
+    # 10을 한 번도 안 넘었다 -- 정작 목표가 "격렬도 10 제한 하 흥미도 최대화"인데
+    # 제약이 걸린 사례가 데이터에 없으면 모델이 그 경계를 배울 수가 없다.
+    # 그래서 5번에 1번은 10~13을 뽑아 격렬도 상단(10~15)도 데이터에 넣는다.
+    lift = random.randint(10, 13) if random.random() < 0.2 else random.randint(3, 9)
     wander = random.randint(10, min(60, width + depth))
     close = max(20, (width + depth) // 2 + 8)
     # 뱅크(커빙) 성향. 켜면 좌우G가 내려가 격렬도가 낮은 순한 트랙, 끄면

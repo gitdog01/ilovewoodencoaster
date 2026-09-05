@@ -112,7 +112,7 @@ def _follow(P, s, types, bounds, occupied):
 def plan_episode(sim: TrackSimulator, station_end: State, goal: State,
                  bounds: Bounds, lift_pieces=None, wander_steps=None,
                  close_budget=24, headroom=2, ztol=2, banked=True,
-                 attempts=40):
+                 attempts=40, strict_banked=True):
     """게임 없이 폐곡선 시퀀스 하나를 설계한다. [(조각, 체인), ...] 또는 None.
 
     goal 은 스테이션 첫 조각의 진입점 -- 여기로 정확히 돌아오면 폐곡선이다.
@@ -120,6 +120,10 @@ def plan_episode(sim: TrackSimulator, station_end: State, goal: State,
 
     banked=True 면 턴을 되도록 뱅크(커빙)로 돌아 좌우G와 격렬도를 낮춘다.
     False 면 맨턴 위주로 격렬한 트랙을 뽑는다.
+
+    strict_banked=True 면 banked=True 일 때 맨턴 폴백을 막아 두 영역이 확실히
+    갈리게 한다 (아래 닫기 단계 주석 참고). 성공률은 떨어지지만 설계는
+    오프라인이라 CPU만 더 쓴다.
     """
     P = planner_for(sim)
     weights = WEIGHTS if banked else WEIGHTS_PLAIN
@@ -176,11 +180,17 @@ def plan_episode(sim: TrackSimulator, station_end: State, goal: State,
             occ1.add(cells)
             # 맨턴 없이 닫아보고, 정 안 되면 그때만 허용한다.
             # (뱅크턴은 진입/해제까지 3조각이라 예산을 좀 더 줘야 닫힌다.)
+            #
+            # strict_banked: 폴백을 아예 막는다. 946개 수집물을 보니 banked=True
+            # 인데도 맨턴이 중앙 9개나 남았는데, 원인이 이 폴백이었다. 맨턴 금지
+            # A*가 성공하면 맨턴 0~2개로 깨끗한데, 폴백으로 넘어가면 tail 전체
+            # (20~30조각)가 맨턴 위주가 되어 분포가 쌍봉이 된다. 설계는 오프라인
+            # 이라 실패해도 게임 왕복이 없으니, 폴백 대신 재설계가 싸게 먹힌다.
             tail = None
             if banked:
                 tail = P.plan(st, goal, rb, occ1, budget=close_budget + 8,
                               exclude=PLAIN_TURNS)
-            if tail is None:
+            if tail is None and not (banked and strict_banked):
                 tail = P.plan(st, goal, rb, occ1, budget=close_budget)
             if tail is not None:
                 return ([(t, True) for t, _ in lift]
