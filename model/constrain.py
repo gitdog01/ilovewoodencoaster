@@ -28,13 +28,19 @@ class BoundsConstraint:
     """
 
     def __init__(self, sim, tok, bounds, start: State, goal: State,
-                 n_rows, ztol=2, allow_eos_only_when_closed=False):
+                 n_rows, ztol=2, allow_eos_only_when_closed=False,
+                 reserve=None):
         self.P = planner_for(sim)
         self.tok = tok
         self.bounds = bounds
         self.goal = goal
         self.eos = tok.stoi["<eos>"]
         self.only_closed = allow_eos_only_when_closed
+        # reserve: "닫는 데 남겨둘 조각 수". 매 스텝 h(다음상태, goal) <= reserve
+        # 를 유지해서, LM 이 아무리 멀리 뻗어도 A* 가 되돌아올 여지를 남긴다.
+        # geom/planner.py 의 wander() 와 같은 장치다 -- 이게 없으면 LM 이
+        # 부지 반대편에서 끝나버려서 A* 마무리가 시작도 못 한다.
+        self.reserve = reserve
         # 토큰 ID -> 조각 타입. 체인 여부는 지오메트리에 영향이 없다.
         self.piece_of = {tok.track_start + i: t
                          for i, (t, _chain) in enumerate(TRACK_TOKENS)}
@@ -84,6 +90,8 @@ class BoundsConstraint:
             if not _in_bounds(self.bounds, nxt):
                 continue
             if occ.blocked(cells):
+                continue
+            if self.reserve is not None and self.P.h(nxt, self.goal) > self.reserve:
                 continue
             allowed.extend(self.tokens_of.get(t, ()))
 
