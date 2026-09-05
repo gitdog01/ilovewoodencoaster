@@ -7,6 +7,11 @@
 뽑으면 평점이 좁은 구간에 뭉쳐서(E 0.5 부근) 조건부 생성 학습에 쓸 게 없다.
 """
 import sys, os, json, random, argparse
+
+# 콘솔 코드페이지(한국어 Windows는 cp949)가 못 쓰는 문자 하나 때문에
+# 20분짜리 수집이 UnicodeEncodeError로 통째로 죽는 걸 막는다.
+# 실제로 실패 분기의 em-dash 하나 때문에 수집이 죽은 적이 있다.
+sys.stdout.reconfigure(errors="replace")
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from geom.simulator import Bounds, TrackSimulator
@@ -65,7 +70,7 @@ with RCTClient.discover(ports=ports) as c, open(args.out, "a", encoding="utf-8")
             continue
         stats = env.evaluate()
         if stats is None:
-            print(f"[{i+1}/{args.n}] 평점 실패 (조각 {len(seq)}개) — "
+            print(f"[{i+1}/{args.n}] 평점 실패 (조각 {len(seq)}개) - "
                   "열차가 한 바퀴를 못 돌았을 가능성")
             continue
         fp.write(json.dumps({

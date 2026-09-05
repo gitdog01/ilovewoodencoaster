@@ -37,4 +37,4 @@ with RCTClient.discover() as c:
         print("=" * 40)
         print("\n[OK] 1단계 통과")
     else:
-        print("평점 없음 — 게임이 일시정지 상태인지 확인하세요.")
+        print("평점 없음 - 게임이 일시정지 상태인지 확인하세요.")
