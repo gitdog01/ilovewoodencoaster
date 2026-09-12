@@ -73,17 +73,23 @@ def make_instance(root, index, port, force=False):
         os.makedirs(os.path.join(inst, name), exist_ok=True)
 
     # 플러그인 사본에 이 인스턴스의 포트를 박는다.
+    write_plugin(inst, port)
+    return inst
+
+
+def write_plugin(inst, port):
+    """리포의 플러그인 정본을 이 인스턴스로 복사하면서 포트를 박는다."""
     with open(PLUGIN_SRC, encoding="utf-8") as fp:
         js = fp.read()
     old = "    const DEFAULT_PORT = 8080;"
     if old not in js:
         sys.exit(f"플러그인에서 DEFAULT_PORT 줄을 못 찾았습니다: {PLUGIN_SRC}")
     js = js.replace(old, f"    const DEFAULT_PORT = {port};", 1)
+    os.makedirs(os.path.join(inst, "plugin"), exist_ok=True)
     dst = os.path.join(inst, "plugin", "ridecreation-api.js")
     with open(dst, "w", encoding="utf-8", newline="\n") as fp:
         fp.write(js)
-
-    return inst
+    return dst
 
 
 def main():
@@ -94,6 +100,10 @@ def main():
     ap.add_argument("--start", type=int, default=0,
                     help="inst 번호 시작값. 돌고 있는 인스턴스는 놔두고 뒤에 더 "
                          "붙일 때 쓴다 (--start 4 --n 8 -> inst4..inst11).")
+    ap.add_argument("--plugin-only", action="store_true",
+                    help="이미 있는 인스턴스의 플러그인 사본만 정본으로 갱신한다. "
+                         "폴더와 정션은 안 건드리므로 --force 와 달리 안전하다. "
+                         "떠 있는 인스턴스는 재시작해야 반영된다.")
     ap.add_argument("--force", action="store_true",
                     help="이미 있는 인스턴스 폴더도 지우고 다시 만든다. "
                          "실행 중인 인스턴스에는 쓰지 말 것.")
@@ -105,6 +115,19 @@ def main():
         sys.exit(f"OpenRCT2 유저 데이터 폴더가 없습니다: {BASE}")
 
     os.makedirs(args.root, exist_ok=True)
+    if args.plugin_only:
+        n = 0
+        for i in range(args.start, args.start + args.n):
+            inst = os.path.join(args.root, f"inst{i}")
+            if not os.path.isdir(inst):
+                print(f"[setup] inst{i}  없음 -> 건너뜀")
+                continue
+            write_plugin(inst, args.base_port + i)
+            print(f"[setup] inst{i}  플러그인 갱신 (포트 {args.base_port + i})")
+            n += 1
+        print(f"\n{n}개 갱신. 떠 있는 인스턴스는 재시작해야 반영된다.")
+        return
+
     made = skipped = 0
     for i in range(args.start, args.start + args.n):
         port = args.base_port + i

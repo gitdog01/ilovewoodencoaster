@@ -94,6 +94,14 @@ class RCTClient:
     def delete_all_rides(self):
         return self.call("deleteAllRides")
 
+    def delete_ride(self, ride_id):
+        """라이드 하나만 철거한다.
+
+        유저 공원에 붙는 경로(생성기 UI)는 delete_all_rides() 를 쓰면 안 된다.
+        수집기는 빈 공원을 전제로 하니 그쪽만 전체 삭제를 쓴다.
+        """
+        return self.call("deleteRide", {"rideId": ride_id}, strict=False)
+
     def all_track_segments(self):
         return self.call("getAllTrackSegments")
 

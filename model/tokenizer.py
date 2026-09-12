@@ -45,6 +45,25 @@ COND_SPECS = {
 }
 
 
+# 학습 데이터에 **실제로 나온** 버킷 범위 (`scripts/check_buckets.py` 실측,
+# 2026-09-12 / 108,296개 기준). 여기 밖의 버킷은 한 번도 학습되지 않아서
+# 임베딩이 초기값 그대로다 -- 추론 때 그런 토큰을 넣으면 모델이 처음 보는
+# 조건을 받는 셈이라 출력이 조용히 망가진다.
+#
+# 부지(width/depth)는 UI 스피너가 12까지 내려가는데 수집기는 width>=20,
+# depth>=16 만 뽑았다. 부지 제약 자체는 constrained decoding 이 기하로 강제하므로
+# 조건 토큰만 학습된 범위로 눌러도 작은 부지에 짓는 건 그대로 된다.
+# height/station 은 수집기가 아예 안 흔들어서 버킷이 하나뿐이다.
+#
+# 수집기가 이 범위를 넓히면 check_buckets.py 를 다시 돌려 여기를 고칠 것.
+SEEN_BUCKETS = {
+    "width":   (4, 6),
+    "depth":   (3, 6),
+    "height":  (4, 4),
+    "station": (1, 1),
+}
+
+
 def _bucket(value, edges):
     for i in range(len(edges) - 1):
         if edges[i] <= value < edges[i + 1]:
@@ -68,12 +87,15 @@ class TrackTokenizer:
 
     # -- 인코딩 ----------------------------------------------------------
     def encode_condition(self, **values):
+        """조건 값 -> 토큰 ID. 학습에 없던 버킷은 SEEN_BUCKETS 로 눌러준다."""
         ids = []
         for name, edges in COND_SPECS.items():
             v = values.get(name)
             if v is None:
                 continue
-            ids.append(self.stoi[f"<{name}={_bucket(v, edges)}>"])
+            b = _bucket(v, edges)
+            lo, hi = SEEN_BUCKETS.get(name, (0, len(edges) - 2))
+            ids.append(self.stoi[f"<{name}={min(max(b, lo), hi)}>"])
         return ids
 
     def encode(self, sequence, condition=None):

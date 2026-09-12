@@ -38,13 +38,15 @@ ap.add_argument("--n-head", type=int, default=8)
 ap.add_argument("--n-embd", type=int, default=256)
 ap.add_argument("--dropout", type=float, default=0.1)
 ap.add_argument("--seed", type=int, default=0)
+ap.add_argument("--min-gen", default="gen2",
+                help="이 세대 미만은 버린다. 전부 쓰려면 빈 문자열.")
 args = ap.parse_args()
 
 torch.manual_seed(args.seed)
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 tok = TrackTokenizer()
-ds = TrackDataset(args.data, tok)
+ds = TrackDataset(args.data, tok, min_gen=args.min_gen or None)
 print(ds, f"device={device}")
 
 cfg = GPTConfig(vocab_size=len(tok), block_size=128, n_layer=args.n_layer,

@@ -34,15 +34,19 @@ def score(stats, target, intensity_cap=10.0):
     return -dist + 0.1 * stats["excitement"]
 
 
-def pick_best(env, seqs, target, limit=None, intensity_cap=10.0, verbose=True):
+def pick_best(env, seqs, target, limit=None, intensity_cap=10.0, verbose=True,
+              clear="all"):
     """후보들을 실제로 짓고 평점을 받아 최고를 고른다.
 
     반환: (최고 시퀀스, 최고 stats, 시도 기록). 하나도 못 지으면 (None, None, 기록).
+
+    clear 는 env.reset() 에 그대로 넘어간다. 유저 공원에서 돌릴 때는 "own" 을
+    줘야 한다 -- 기본값 "all" 은 공원의 라이드를 전부 지운다.
     """
     tried = []
     best = (None, None, float("-inf"))
     for i, seq in enumerate(seqs[:limit] if limit else seqs):
-        env.reset(station_length=3)
+        env.reset(station_length=3, clear=clear)
         _placed, complete = env.build(seq)
         if not complete:
             tried.append({"i": i, "ok": False, "why": "배치/폐곡선 실패"})

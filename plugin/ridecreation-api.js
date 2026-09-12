@@ -12,6 +12,11 @@ function main() {
     let generationRequest = null;
     let generationStatus = "대기 중";
     let statusLabel = null;
+    // 데몬이 마지막으로 폴링해간 틱. 데몬을 안 띄운 채 "트랙 생성"을 누르면
+    // 요청이 큐에 얌전히 쌓이기만 해서 버튼이 고장난 것처럼 보인다 -- 눌렀을 때
+    // 데몬이 살아있는지 여기로 판별해서 알려준다.
+    let lastDaemonTick = -1;
+    const DAEMON_STALE_TICKS = 200;   // 틱 약 40/s -> 5초
 
     // Create TCP listener
     const server = network.createListener();
@@ -125,7 +130,11 @@ function main() {
                         width: vals.width, depth: vals.depth, n: vals.n,
                         requestedAt: date.ticksElapsed,
                     };
-                    generationStatus = "요청 보냄 -- 파이썬 데몬 대기";
+                    const stale = lastDaemonTick < 0 ||
+                        (date.ticksElapsed - lastDaemonTick) > DAEMON_STALE_TICKS;
+                    generationStatus = stale
+                        ? "데몬이 안 보입니다 -- 08_daemon.py 실행 필요"
+                        : "요청 보냄 -- 파이썬 데몬 대기";
                     const w = ui.getWindow(WINDOW_ID);
                     if (w) w.findWidget("lbl_status").text = generationStatus;
                 },
@@ -220,6 +229,7 @@ function main() {
         ["listAllRides",         () => handleListAllRides()],
         ["getAllTrackSegments",  () => handleGetAllTrackSegments()],
         ["deleteAllRides",       () => handleDeleteAllRides()],
+        ["deleteRide",           params => handleDeleteRide(params)],
         ["startRideTest",        params => handleStartRideTest(params)],
         ["getRideStats",         params => handleGetRideStats(params)],
         ["getRideMeasurements",  params => handleGetRideMeasurements(params)],
@@ -248,7 +258,10 @@ function main() {
         // 이 빌드에서는 network.createSocket() 의 connect 콜백이 안 와서
         // 플러그인에서 바깥으로 나가는 연결도 못 믿는다. 그래서 방향을 뒤집어,
         // UI 는 요청을 여기 담아두기만 하고 파이썬 데몬이 폴링해서 가져간다.
-        ["getGenerationRequest", async () => ({ request: generationRequest })],
+        ["getGenerationRequest", async () => {
+            lastDaemonTick = date.ticksElapsed;
+            return { request: generationRequest };
+        }],
         ["setGenerationStatus",  async params => {
             generationStatus = (params && params.status) || "";
             if (statusLabel) statusLabel.text = generationStatus;
@@ -549,6 +562,17 @@ function main() {
             }
         }
         return "Deleted all rides.";
+    }
+
+    // 라이드 하나만 철거한다. deleteAllRides 는 수집기용이다 -- 유저 공원에
+    // 붙는 생성기 UI 가 그걸 부르면 남의 라이드까지 통째로 날아간다.
+    async function handleDeleteRide(params) {
+        const { rideId } = params || {};
+        if (typeof rideId !== "number") throw new Error("Missing or invalid parameter: rideId");
+        if (!map.getRide(rideId)) return { deleted: false, reason: "not found" };
+        await executeAction("ridedemolish", { ride: rideId, modifyType: 0 });
+        rideTrackStates.delete(rideId);
+        return { deleted: true, rideId: rideId };
     }
 
     async function handleGetValidNextPieces(params) {

@@ -37,12 +37,30 @@ ORIGIN = (67, 66, 14)
 DIRECTION = 0
 
 
-def handle(req, model, tok, sim, env, client, device, cap):
+def handle(req, model, tok, sim, env, client, device, cap, idle_speed=1,
+           keep=False):
     """요청 하나를 처리한다. 진행 상황은 게임 UI 에 되돌려 보여준다."""
     def status(msg):
         print(f"  {msg}")
         client.call("setGenerationStatus", {"status": msg}, strict=False)
 
+    # 채점(테스트 주행)은 시뮬 시간 ~35초가 필요해서 속도를 올려야 하지만,
+    # 유저 공원을 계속 8배속으로 돌려놓으면 안 된다. 처리하는 동안만 올린다.
+    client.set_game_speed(8)
+    delivered = False
+    try:
+        delivered = _handle(req, model, tok, sim, env, client, device, cap,
+                            status, keep)
+    finally:
+        client.set_game_speed(idle_speed)
+        # 실패하거나 예외로 끝나면 채점하던 후보가 공원에 그대로 남는다.
+        # 성공했으면 그건 유저에게 보여줄 완성품이니 놔둔다.
+        if not delivered and env.ride_id is not None:
+            client.delete_ride(env.release())
+
+
+def _handle(req, model, tok, sim, env, client, device, cap, status, keep):
+    """트랙을 하나 넘겼으면 True. False 면 공원에 남은 건 치워야 할 찌꺼기다."""
     width = int(req.get("width", 28))
     depth = int(req.get("depth", 24))
     n = int(req.get("n", 16))
@@ -58,21 +76,32 @@ def handle(req, model, tok, sim, env, client, device, cap):
                            device, station_tiles=tiles)
     if not seqs:
         status("실패: 폐곡선 후보 없음. 부지를 키우거나 후보 수를 늘려보세요.")
-        return
+        return False
 
     status(f"폐곡선 {len(seqs)}개 -- 게임에서 채점 중...")
+    # clear="own": 후보를 갈아끼울 때 이 env 가 만든 라이드만 지운다.
+    # 기본값("all")이면 유저 공원의 다른 라이드까지 전부 날아간다.
     seq, stats, tried = pick_best(env, seqs, target, intensity_cap=cap,
-                                 verbose=False)
+                                  verbose=False, clear="own")
     built = sum(1 for t in tried if t["ok"])
     if seq is None:
         status(f"실패: {built}개 지었지만 조건을 만족하는 게 없음")
-        return
+        return False
 
-    env.reset(station_length=3)
+    env.reset(station_length=3, clear="own")
     env.build(seq)
+    if keep:
+        # 완성품을 유저 것으로 넘긴다. 단, ORIGIN 이 고정이라 그 자리가 계속
+        # 막히므로 **다음 요청은 스테이션을 못 깐다.** 유저가 직접 치우거나
+        # 자리를 옮기기 전까지는 한 번만 되는 모드다 (좌표 선택은 TODO).
+        env.release()
     status(f"완료: E {stats['excitement']:.2f} / I {stats['intensity']:.2f} "
            f"/ latg {stats['maxLateralGs']:.2f} ({built}개 중 선택)")
     print(f"  -> 조각 {len(seq)}개, 최고속도 {stats['maxSpeed']}")
+    if keep:
+        print("  (--keep: 이 트랙을 남겨둡니다. 다음 요청은 같은 자리에 못 지으니 "
+              "먼저 치우세요.)")
+    return True
 
 
 def main():
@@ -82,6 +111,13 @@ def main():
     ap.add_argument("--poll", type=float, default=1.0, help="폴링 간격(초)")
     ap.add_argument("--cap", type=float, default=10.0, help="격렬도 상한")
     ap.add_argument("--once", action="store_true", help="요청 하나만 처리하고 종료")
+    ap.add_argument("--idle-speed", type=int, default=1,
+                    help="요청 처리가 끝난 뒤 되돌릴 게임 속도")
+    ap.add_argument("--keep", action="store_true",
+                    help="완성된 트랙을 남긴다. 기본은 다음 요청 때 자기 트랙을 "
+                         "갈아끼우는 것 -- ORIGIN 이 고정이라 남기면 그 자리가 "
+                         "막혀서 다음 요청이 실패한다. 유저가 지은 다른 라이드는 "
+                         "어느 쪽이든 건드리지 않는다.")
     args = ap.parse_args()
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -94,7 +130,6 @@ def main():
 
     ports = [args.port] if args.port else range(8080, 8110)
     client = RCTClient.discover(ports=ports)
-    client.set_game_speed(8)
     env = WoodenCoasterEnv(client, origin=ORIGIN)
     client.call("setGenerationStatus", {"status": "데몬 연결됨 -- 대기 중"},
                 strict=False)
@@ -112,7 +147,6 @@ def main():
         while True:
             try:
                 client = RCTClient.discover(ports=ports, verbose=False)
-                client.set_game_speed(8)
                 env = WoodenCoasterEnv(client, origin=ORIGIN)
                 print("  게임에 다시 연결됨")
                 return
@@ -132,7 +166,8 @@ def main():
                 print(f"\n요청 받음: {req}")
                 client.call("clearGenerationRequest", strict=False)
                 try:
-                    handle(req, model, tok, sim, env, client, device, args.cap)
+                    handle(req, model, tok, sim, env, client, device,
+                           args.cap, args.idle_speed, args.keep)
                 except Exception as e:
                     # 요청 하나가 죽어도 데몬은 살아있어야 한다.
                     msg = f"오류: {type(e).__name__}: {e}"

@@ -33,16 +33,37 @@ def condition_of(record):
     }
 
 
+GEN_ORDER = ["gen1", "gen2", "gen3", "gen4"]
+
+
 class TrackDataset:
-    def __init__(self, path, tok=None, val_frac=0.05, seed=0, max_len=128):
+    def __init__(self, path, tok=None, val_frac=0.05, seed=0, max_len=128,
+                 min_gen="gen2"):
+        """min_gen: 이 세대 미만인 레코드는 버린다 (build_dataset.py 의 gen_label).
+
+        dataset.jsonl 은 `--min-gen` 없이 만들면 gen1 까지 다 들어간다.
+        gen1 은 `banked` 플래그가 무효라 라벨이 오염돼 있고 격렬도가 10을
+        한 번도 안 넘어서, 조건부 학습에 섞으면 안 된다 (CLAUDE.md 참고).
+        걸러 쓰는 쪽이 기본이므로 여기서 한 번 더 막는다.
+        """
         self.tok = tok or TrackTokenizer()
         self.max_len = max_len
-        rows = []
+        min_i = GEN_ORDER.index(min_gen) if min_gen else -1
+        rows, self.dropped_gen = [], 0
         with open(path, encoding="utf-8") as fp:
             for line in fp:
                 line = line.strip()
-                if line:
-                    rows.append(json.loads(line))
+                if not line:
+                    continue
+                r = json.loads(line)
+                if min_i >= 0:
+                    g = (r.get("meta") or {}).get("gen_label")
+                    # 세대를 모르는 레코드는 남긴다 -- build_dataset 을 안 거친
+                    # part 파일을 직접 물릴 때 전부 날아가면 곤란하다.
+                    if g in GEN_ORDER and GEN_ORDER.index(g) < min_i:
+                        self.dropped_gen += 1
+                        continue
+                rows.append(r)
 
         self.items, self.skipped = [], 0
         for r in rows:
@@ -63,7 +84,8 @@ class TrackDataset:
 
     def __repr__(self):
         return (f"<TrackDataset train={len(self.train)} val={len(self.val)} "
-                f"skipped={self.skipped} vocab={len(self.tok)}>")
+                f"skipped={self.skipped} dropped_gen={self.dropped_gen} "
+                f"vocab={len(self.tok)}>")
 
     def batch(self, split, batch_size, device, rng=None):
         """(x, y) 배치. y 는 조건 프리픽스 자리가 IGNORE 로 마스킹돼 있다."""
