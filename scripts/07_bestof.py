@@ -21,7 +21,7 @@ from geom.simulator import Bounds, TrackSimulator
 from model.bestof import pick_best
 from model.gpt import GPT, GPTConfig
 from model.hybrid import generate_closed, station_states
-from model.tokenizer import TrackTokenizer
+from model.tokenizer import TrackTokenizer, snap
 from rct import constants as C
 from rct.client import RCTClient
 from rct.env import WoodenCoasterEnv
@@ -61,6 +61,12 @@ def main():
     start, goal, st_tiles = station_states(sim, ORIGIN, DIRECTION, 3)
     target = {"exc": args.exc, "int": args.intensity,
               "nau": args.nau, "latg": args.latg}
+    # 평점은 연속이 아니다 -- 어휘 21종이 만들 수 있는 값 사이에 구멍이 있다
+    # (격렬도는 3.91 다음이 5.14). 구멍 안의 목표는 도달 가능한 쪽으로 당긴다.
+    for k in list(target):
+        target[k], note = snap(k, target[k])
+        if note:
+            print(f"  [주의] {note}")
     cond = dict(target, width=args.width, depth=args.depth, height=60, station=3)
 
     print(f"목표: 흥미 {args.exc} / 격렬 {args.intensity} / 멀미 {args.nau} "

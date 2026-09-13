@@ -28,7 +28,7 @@ from geom.simulator import Bounds, TrackSimulator
 from model.bestof import pick_best
 from model.gpt import GPT, GPTConfig
 from model.hybrid import generate_closed, station_states
-from model.tokenizer import TrackTokenizer
+from model.tokenizer import TrackTokenizer, snap
 from rct.client import RCTClient
 from rct.env import WoodenCoasterEnv
 
@@ -66,6 +66,17 @@ def _handle(req, model, tok, sim, env, client, device, cap, status, keep):
     n = int(req.get("n", 16))
     target = {"exc": float(req.get("exc", 5)), "int": float(req.get("int", 8)),
               "nau": float(req.get("nau", 3)), "latg": float(req.get("latg", 2.5))}
+
+    # 평점은 연속이 아니다. 어휘 21종으로 만들 수 있는 값이 몇 개의 띠에 몰리고
+    # 그 사이는 하나도 없다 (격렬도는 3.91 다음이 5.14). 구멍 안의 값을 그대로
+    # 두면 모델이 조용히 엉뚱한 걸 내놓으므로, 당기고 유저에게 알린다.
+    notes = []
+    for k in list(target):
+        target[k], note = snap(k, target[k])
+        if note:
+            notes.append(note)
+    if notes:
+        status("; ".join(notes))
 
     bounds = Bounds.plot(ORIGIN, DIRECTION, width, depth, 60)
     start, goal, tiles = station_states(sim, ORIGIN, DIRECTION, 3)
