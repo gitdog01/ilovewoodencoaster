@@ -24,36 +24,24 @@ from gen.random_walk import PLAIN_TURNS, planner_for
 from model.constrain import BoundsConstraint
 
 
-def station_states(sim, origin, direction, station_length=3):
-    """스테이션의 (끝 상태, 진입점) 을 시뮬레이터로 계산한다.
+def station_states(sim, origin, direction, station_length=3,
+                   reserve_entrance=True):
+    """스테이션의 (끝 상태, 진입점, 점유 타일) 을 시뮬레이터로 계산한다.
 
     좌표를 손으로 가정하면 안 된다. 방향 0 은 -x 로 진행하는데 +y 로 가정했다가
     오프라인에서는 100% 닫히는데 게임에 지으면 전부 실패했다 (게임의 실제
     스테이션 끝은 (64,66,14), 가정값은 (67,69,14) 였다).
 
-    rct/env.py 의 reset() 이 놓는 조각열과 같은 것을 따라간다.
+    타일 계산은 geom/simulator.station_tiles 하나로 모았다 -- 수집기
+    (gen/random_walk) 와 추론 경로가 같은 규칙을 써야 한다. 예전에는 여기에
+    사본이 있어서 한쪽만 고치면 갈라졌다.
     """
-    from geom.simulator import Pos
-    from rct import constants as C
-    # 스테이션 조각(1/2/3)은 geometry.json 에 없다 -- 01_extract_geometry.py 가
-    # 스테이션 "다음" 조각만 테스트하기 때문. 다만 스테이션은 기하학적으로
-    # 평지와 같다(한 칸 전진, 경사/뱅크 변화 없음)이므로 FLAT 으로 따라간다.
-    # 검증: origin (67,66,14) dir=0 에서 3칸 -> (64,66,14) 로, 게임이 내려주는
-    # env.reset() 반환값과 정확히 일치한다.
-    p = Pos(origin[0], origin[1], origin[2], direction)
-    tiles = [(p.x, p.y, p.z)]
-    for _ in range(station_length):
-        nxt = sim.advance(p, C.FLAT)
-        if nxt is None:
-            raise RuntimeError("스테이션을 따라갈 수 없습니다")
-        p = nxt
-        tiles.append((p.x, p.y, p.z))
+    from geom.simulator import station_tiles
+    tiles, p = station_tiles(sim, origin, direction, station_length,
+                             reserve_entrance=reserve_entrance)
     # 스테이션은 평지/뱅크 없음이라 slope=bank=0.
     start = State(p.x, p.y, p.z, p.direction, 0, 0)
     goal = State(origin[0], origin[1], origin[2], direction, 0, 0)
-    # tiles: 플랫폼이 실제로 깔린 타일 전부. 여기를 점유로 안 잡으면 A* 꼬리가
-    # 플랫폼 위를 지나가는 설계를 내놓고 게임이 배치를 거부한다 (실측: 배치
-    # 실패 12건 중 7건이 스테이션 타일 위였다).
     return start, goal, tiles
 
 

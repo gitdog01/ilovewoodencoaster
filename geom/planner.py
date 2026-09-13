@@ -15,7 +15,9 @@ geometry.json 에는 조각마다 begin/endSlope, begin/endBank 가 들어있어
 """
 
 import heapq
+import json
 import math
+import os
 import random
 from dataclasses import dataclass
 
@@ -39,17 +41,50 @@ class State:
         return (self.x, self.y, self.z)
 
 
+_MEASURED = None
+
+
+def _measured_footprints(path=None):
+    """scripts/09_extract_footprints.py 가 실측한 표. 없으면 빈 dict.
+
+    키는 "조각타입:진입방향", 값은 진입 타일 기준 상대좌표 목록이다.
+    게임에서 직접 잰 값이라 아래 바운딩 박스 추정보다 정확하다.
+    """
+    global _MEASURED
+    if _MEASURED is None:
+        path = path or os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "footprints.json")
+        try:
+            with open(path, encoding="utf-8") as fp:
+                raw = json.load(fp)
+            _MEASURED = {k: tuple(tuple(c) for c in v["cells"])
+                         for k, v in raw.items()}
+        except (OSError, ValueError, KeyError):
+            _MEASURED = {}
+    return _MEASURED
+
+
 def _footprint_deltas(dx, dy, dz):
-    """조각이 실제로 깔리는 타일들 (진입 타일 기준 상대 좌표).
+    """조각이 깔리는 타일의 **추정** (진입 타일 기준 상대 좌표).
 
-    직선 조각은 한 칸만 전진하니 도착 타일 하나면 되는데, 5칸/3칸 턴은 호를
-    그리며 여러 타일을 쓸고 지나간다. 플러그인이 조각의 타일 블록 목록을
-    안 내려주므로(getAllTrackSegments 에 없다) 진입/진출 타일의 바운딩 박스로
-    보수적으로 잡는다. 실제보다 몇 타일 더 잡지만, 덜 잡아서 게임이 배치를
-    거부하는 것보다 낫다.
+    **이건 폴백이다.** footprints.json 에 실측값이 있으면 Planner 가 그걸 쓴다
+    (scripts/09_extract_footprints.py). 실측 표에 없는 조합만 여기로 온다.
 
-    진입 타일 (0, 0, 0) 은 뺀다. 그 자리는 직전 조각이 이미 차지하고 있어서
-    (정상적으로 공유하는 타일이다) 넣어두면 모든 턴이 항상 충돌로 걸린다.
+    진입/진출 타일의 바운딩 박스로 잡는다. 2026-09-13 에 게임과 대조해보니
+    이 추정에는 문제가 두 개 있다:
+
+    1. **진입 타일을 빼는 게 틀렸다.** 게임은 조각을 **진입 타일부터** 놓고
+       진출 타일은 안 쓴다. 아래 코드는 정반대라, 점유 기록이 조각 하나만큼
+       앞으로 밀린다. 직선이 이어지는 구간에서는 집합이 거의 같아서 오래
+       안 들켰다. 84개 조합 전부에서 진입 타일 1개씩, 총 84타일(실측의 36.8%)을
+       놓치고 있었다.
+    2. **과대 claim.** 전체로 실측의 1.35배를 잡는다 (5칸 턴은 실제 7타일인데
+       11타일). 거부를 막아주는 대신 설계 공간을 그만큼 좁힌다.
+
+    고치지 않고 남겨둔 이유: 어휘 21종은 이미 실측 표로 덮여 있어서 이 경로를
+    안 탄다. 어휘를 넓히면 09_extract_footprints.py 를 다시 돌릴 것 -- 헬릭스류는
+    이 추정으로 179~216타일이 나와서 쓸 수가 없다.
     """
     if abs(dx) + abs(dy) <= 1:
         return ((dx, dy, dz),)
@@ -109,6 +144,10 @@ class Planner:
         self.max_xy = 1
         self.max_axis = 1
         self.max_dz = 1
+        # 실측 표를 쓴 조합 / 바운딩 박스로 때운 조합 (진단용)
+        self.measured_used = 0
+        self.estimated = 0
+        measured = _measured_footprints()
         for t in self.pieces:
             for d in range(4):
                 e = sim.geo.get(f"{t}:{d}")
@@ -118,10 +157,16 @@ class Planner:
                 self.by_entry.setdefault(k, []).append((t, e))
                 # 진입 타일 기준 상대 좌표로 미리 굳혀 둔다. A* 안쪽 루프에서
                 # geometry dict 를 다시 뒤지지 않으려고.
+                # 실측 표가 있으면 그걸 쓰고, 없는 조합만 바운딩 박스로 때운다.
+                cells = measured.get(f"{t}:{d}")
+                if cells is None:
+                    cells = _footprint_deltas(e["dx"], e["dy"], e["dz"])
+                    self.estimated += 1
+                else:
+                    self.measured_used += 1
                 self.templates.setdefault(k, []).append((
                     t, e["dx"], e["dy"], e["dz"], e["outDirection"],
-                    e["endSlope"], e["endBank"],
-                    _footprint_deltas(e["dx"], e["dy"], e["dz"]),
+                    e["endSlope"], e["endBank"], cells,
                 ))
                 self.max_xy = max(self.max_xy, abs(e["dx"]) + abs(e["dy"]))
                 self.max_axis = max(self.max_axis, abs(e["dx"]), abs(e["dy"]))

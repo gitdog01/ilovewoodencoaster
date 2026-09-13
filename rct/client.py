@@ -94,6 +94,23 @@ class RCTClient:
     def delete_all_rides(self):
         return self.call("deleteAllRides")
 
+    def ride_tiles(self, ride_id):
+        """라이드가 실제로 점유한 타일 목록 (게임의 진짜 값).
+
+        geom/planner.py 의 _footprint_deltas() 는 이걸 바운딩 박스로 추정하는데,
+        그 추정이 맞는지 대조할 기준선이 여기다. baseZ/clearanceZ 는 raw 단위
+        (8 = tileCoordinateZ 1칸).
+        """
+        return self.call("getRideTiles", {"rideId": ride_id})
+
+    def tile_elements(self, x, y):
+        """타일 하나의 모든 엘리먼트 (지형/트랙/지지대/풍경).
+
+        배치가 왜 거부됐는지 알려면 자기 트랙 말고 그 자리에 실제로 뭐가
+        있는지를 봐야 한다.
+        """
+        return self.call("getTileElements", {"x": x, "y": y})
+
     def delete_ride(self, ride_id):
         """라이드 하나만 철거한다.
 

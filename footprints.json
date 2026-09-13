@@ -1,0 +1,1898 @@
+{
+ "0:0": {
+  "type": 0,
+  "name": "Flat",
+  "direction": 0,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 22,
+  "variants": 1
+ },
+ "0:1": {
+  "type": 0,
+  "name": "Flat",
+  "direction": 1,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 12,
+  "variants": 1
+ },
+ "0:2": {
+  "type": 0,
+  "name": "Flat",
+  "direction": 2,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 116,
+  "variants": 1
+ },
+ "0:3": {
+  "type": 0,
+  "name": "Flat",
+  "direction": 3,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 23,
+  "variants": 1
+ },
+ "4:0": {
+  "type": 4,
+  "name": "Up25",
+  "direction": 0,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 298,
+  "variants": 1
+ },
+ "4:1": {
+  "type": 4,
+  "name": "Up25",
+  "direction": 1,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 5,
+  "variants": 1
+ },
+ "4:2": {
+  "type": 4,
+  "name": "Up25",
+  "direction": 2,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 4,
+  "variants": 1
+ },
+ "4:3": {
+  "type": 4,
+  "name": "Up25",
+  "direction": 3,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 8,
+  "variants": 1
+ },
+ "6:0": {
+  "type": 6,
+  "name": "FlatToUp25",
+  "direction": 0,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 55,
+  "variants": 1
+ },
+ "6:1": {
+  "type": 6,
+  "name": "FlatToUp25",
+  "direction": 1,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 9,
+  "variants": 1
+ },
+ "6:2": {
+  "type": 6,
+  "name": "FlatToUp25",
+  "direction": 2,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 6,
+  "variants": 1
+ },
+ "6:3": {
+  "type": 6,
+  "name": "FlatToUp25",
+  "direction": 3,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 6,
+  "variants": 1
+ },
+ "9:0": {
+  "type": 9,
+  "name": "Up25ToFlat",
+  "direction": 0,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 55,
+  "variants": 1
+ },
+ "9:1": {
+  "type": 9,
+  "name": "Up25ToFlat",
+  "direction": 1,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 9,
+  "variants": 1
+ },
+ "9:2": {
+  "type": 9,
+  "name": "Up25ToFlat",
+  "direction": 2,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 6,
+  "variants": 1
+ },
+ "9:3": {
+  "type": 9,
+  "name": "Up25ToFlat",
+  "direction": 3,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 6,
+  "variants": 1
+ },
+ "10:0": {
+  "type": 10,
+  "name": "Down25",
+  "direction": 0,
+  "cells": [
+   [
+    0,
+    0,
+    -2
+   ]
+  ],
+  "n": 271,
+  "variants": 1
+ },
+ "10:1": {
+  "type": 10,
+  "name": "Down25",
+  "direction": 1,
+  "cells": [
+   [
+    0,
+    0,
+    -2
+   ]
+  ],
+  "n": 1,
+  "variants": 1
+ },
+ "10:2": {
+  "type": 10,
+  "name": "Down25",
+  "direction": 2,
+  "cells": [
+   [
+    0,
+    0,
+    -2
+   ]
+  ],
+  "n": 27,
+  "variants": 1
+ },
+ "10:3": {
+  "type": 10,
+  "name": "Down25",
+  "direction": 3,
+  "cells": [
+   [
+    0,
+    0,
+    -2
+   ]
+  ],
+  "n": 1,
+  "variants": 1
+ },
+ "12:0": {
+  "type": 12,
+  "name": "FlatToDown25",
+  "direction": 0,
+  "cells": [
+   [
+    0,
+    0,
+    -1
+   ]
+  ],
+  "n": 51,
+  "variants": 1
+ },
+ "12:1": {
+  "type": 12,
+  "name": "FlatToDown25",
+  "direction": 1,
+  "cells": [
+   [
+    0,
+    0,
+    -1
+   ]
+  ],
+  "n": 8,
+  "variants": 1
+ },
+ "12:2": {
+  "type": 12,
+  "name": "FlatToDown25",
+  "direction": 2,
+  "cells": [
+   [
+    0,
+    0,
+    -1
+   ]
+  ],
+  "n": 26,
+  "variants": 1
+ },
+ "12:3": {
+  "type": 12,
+  "name": "FlatToDown25",
+  "direction": 3,
+  "cells": [
+   [
+    0,
+    0,
+    -1
+   ]
+  ],
+  "n": 6,
+  "variants": 1
+ },
+ "15:0": {
+  "type": 15,
+  "name": "Down25ToFlat",
+  "direction": 0,
+  "cells": [
+   [
+    0,
+    0,
+    -1
+   ]
+  ],
+  "n": 51,
+  "variants": 1
+ },
+ "15:1": {
+  "type": 15,
+  "name": "Down25ToFlat",
+  "direction": 1,
+  "cells": [
+   [
+    0,
+    0,
+    -1
+   ]
+  ],
+  "n": 8,
+  "variants": 1
+ },
+ "15:2": {
+  "type": 15,
+  "name": "Down25ToFlat",
+  "direction": 2,
+  "cells": [
+   [
+    0,
+    0,
+    -1
+   ]
+  ],
+  "n": 26,
+  "variants": 1
+ },
+ "15:3": {
+  "type": 15,
+  "name": "Down25ToFlat",
+  "direction": 3,
+  "cells": [
+   [
+    0,
+    0,
+    -1
+   ]
+  ],
+  "n": 6,
+  "variants": 1
+ },
+ "16:0": {
+  "type": 16,
+  "name": "LeftQuarterTurn5",
+  "direction": 0,
+  "cells": [
+   [
+    -2,
+    -2,
+    0
+   ],
+   [
+    -2,
+    -1,
+    0
+   ],
+   [
+    -1,
+    -2,
+    0
+   ],
+   [
+    -1,
+    -1,
+    0
+   ],
+   [
+    -1,
+    0,
+    0
+   ],
+   [
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 11,
+  "variants": 1
+ },
+ "16:1": {
+  "type": 16,
+  "name": "LeftQuarterTurn5",
+  "direction": 1,
+  "cells": [
+   [
+    -2,
+    1,
+    0
+   ],
+   [
+    -2,
+    2,
+    0
+   ],
+   [
+    -1,
+    0,
+    0
+   ],
+   [
+    -1,
+    1,
+    0
+   ],
+   [
+    -1,
+    2,
+    0
+   ],
+   [
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    1,
+    0
+   ]
+  ],
+  "n": 4,
+  "variants": 1
+ },
+ "16:2": {
+  "type": 16,
+  "name": "LeftQuarterTurn5",
+  "direction": 2,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    1,
+    0
+   ],
+   [
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    1,
+    0
+   ],
+   [
+    1,
+    2,
+    0
+   ],
+   [
+    2,
+    1,
+    0
+   ],
+   [
+    2,
+    2,
+    0
+   ]
+  ],
+  "n": 37,
+  "variants": 1
+ },
+ "16:3": {
+  "type": 16,
+  "name": "LeftQuarterTurn5",
+  "direction": 3,
+  "cells": [
+   [
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    -2,
+    0
+   ],
+   [
+    1,
+    -1,
+    0
+   ],
+   [
+    1,
+    0,
+    0
+   ],
+   [
+    2,
+    -2,
+    0
+   ],
+   [
+    2,
+    -1,
+    0
+   ]
+  ],
+  "n": 55,
+  "variants": 1
+ },
+ "17:0": {
+  "type": 17,
+  "name": "RightQuarterTurn5",
+  "direction": 0,
+  "cells": [
+   [
+    -2,
+    1,
+    0
+   ],
+   [
+    -2,
+    2,
+    0
+   ],
+   [
+    -1,
+    0,
+    0
+   ],
+   [
+    -1,
+    1,
+    0
+   ],
+   [
+    -1,
+    2,
+    0
+   ],
+   [
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    1,
+    0
+   ]
+  ],
+  "n": 10,
+  "variants": 1
+ },
+ "17:1": {
+  "type": 17,
+  "name": "RightQuarterTurn5",
+  "direction": 1,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    1,
+    0
+   ],
+   [
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    1,
+    0
+   ],
+   [
+    1,
+    2,
+    0
+   ],
+   [
+    2,
+    1,
+    0
+   ],
+   [
+    2,
+    2,
+    0
+   ]
+  ],
+  "n": 44,
+  "variants": 1
+ },
+ "17:2": {
+  "type": 17,
+  "name": "RightQuarterTurn5",
+  "direction": 2,
+  "cells": [
+   [
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    -2,
+    0
+   ],
+   [
+    1,
+    -1,
+    0
+   ],
+   [
+    1,
+    0,
+    0
+   ],
+   [
+    2,
+    -2,
+    0
+   ],
+   [
+    2,
+    -1,
+    0
+   ]
+  ],
+  "n": 53,
+  "variants": 1
+ },
+ "17:3": {
+  "type": 17,
+  "name": "RightQuarterTurn5",
+  "direction": 3,
+  "cells": [
+   [
+    -2,
+    -2,
+    0
+   ],
+   [
+    -2,
+    -1,
+    0
+   ],
+   [
+    -1,
+    -2,
+    0
+   ],
+   [
+    -1,
+    -1,
+    0
+   ],
+   [
+    -1,
+    0,
+    0
+   ],
+   [
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 3,
+  "variants": 1
+ },
+ "18:0": {
+  "type": 18,
+  "name": "FlatToLeftBank",
+  "direction": 0,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 16,
+  "variants": 1
+ },
+ "18:1": {
+  "type": 18,
+  "name": "FlatToLeftBank",
+  "direction": 1,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 15,
+  "variants": 1
+ },
+ "18:2": {
+  "type": 18,
+  "name": "FlatToLeftBank",
+  "direction": 2,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 38,
+  "variants": 1
+ },
+ "18:3": {
+  "type": 18,
+  "name": "FlatToLeftBank",
+  "direction": 3,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 43,
+  "variants": 1
+ },
+ "19:0": {
+  "type": 19,
+  "name": "FlatToRightBank",
+  "direction": 0,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 14,
+  "variants": 1
+ },
+ "19:1": {
+  "type": 19,
+  "name": "FlatToRightBank",
+  "direction": 1,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 39,
+  "variants": 1
+ },
+ "19:2": {
+  "type": 19,
+  "name": "FlatToRightBank",
+  "direction": 2,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 28,
+  "variants": 1
+ },
+ "19:3": {
+  "type": 19,
+  "name": "FlatToRightBank",
+  "direction": 3,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 10,
+  "variants": 1
+ },
+ "20:0": {
+  "type": 20,
+  "name": "LeftBankToFlat",
+  "direction": 0,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 31,
+  "variants": 1
+ },
+ "20:1": {
+  "type": 20,
+  "name": "LeftBankToFlat",
+  "direction": 1,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 32,
+  "variants": 1
+ },
+ "20:2": {
+  "type": 20,
+  "name": "LeftBankToFlat",
+  "direction": 2,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 39,
+  "variants": 1
+ },
+ "20:3": {
+  "type": 20,
+  "name": "LeftBankToFlat",
+  "direction": 3,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 10,
+  "variants": 1
+ },
+ "21:0": {
+  "type": 21,
+  "name": "RightBankToFlat",
+  "direction": 0,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 12,
+  "variants": 1
+ },
+ "21:1": {
+  "type": 21,
+  "name": "RightBankToFlat",
+  "direction": 1,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 15,
+  "variants": 1
+ },
+ "21:2": {
+  "type": 21,
+  "name": "RightBankToFlat",
+  "direction": 2,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 28,
+  "variants": 1
+ },
+ "21:3": {
+  "type": 21,
+  "name": "RightBankToFlat",
+  "direction": 3,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 36,
+  "variants": 1
+ },
+ "22:0": {
+  "type": 22,
+  "name": "BankedLeftQuarterTurn5",
+  "direction": 0,
+  "cells": [
+   [
+    -2,
+    -2,
+    0
+   ],
+   [
+    -2,
+    -1,
+    0
+   ],
+   [
+    -1,
+    -2,
+    0
+   ],
+   [
+    -1,
+    -1,
+    0
+   ],
+   [
+    -1,
+    0,
+    0
+   ],
+   [
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 6,
+  "variants": 1
+ },
+ "22:1": {
+  "type": 22,
+  "name": "BankedLeftQuarterTurn5",
+  "direction": 1,
+  "cells": [
+   [
+    -2,
+    1,
+    0
+   ],
+   [
+    -2,
+    2,
+    0
+   ],
+   [
+    -1,
+    0,
+    0
+   ],
+   [
+    -1,
+    1,
+    0
+   ],
+   [
+    -1,
+    2,
+    0
+   ],
+   [
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    1,
+    0
+   ]
+  ],
+  "n": 2,
+  "variants": 1
+ },
+ "22:2": {
+  "type": 22,
+  "name": "BankedLeftQuarterTurn5",
+  "direction": 2,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    1,
+    0
+   ],
+   [
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    1,
+    0
+   ],
+   [
+    1,
+    2,
+    0
+   ],
+   [
+    2,
+    1,
+    0
+   ],
+   [
+    2,
+    2,
+    0
+   ]
+  ],
+  "n": 28,
+  "variants": 1
+ },
+ "22:3": {
+  "type": 22,
+  "name": "BankedLeftQuarterTurn5",
+  "direction": 3,
+  "cells": [
+   [
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    -2,
+    0
+   ],
+   [
+    1,
+    -1,
+    0
+   ],
+   [
+    1,
+    0,
+    0
+   ],
+   [
+    2,
+    -2,
+    0
+   ],
+   [
+    2,
+    -1,
+    0
+   ]
+  ],
+  "n": 35,
+  "variants": 1
+ },
+ "23:0": {
+  "type": 23,
+  "name": "BankedRightQuarterTurn5",
+  "direction": 0,
+  "cells": [
+   [
+    -2,
+    1,
+    0
+   ],
+   [
+    -2,
+    2,
+    0
+   ],
+   [
+    -1,
+    0,
+    0
+   ],
+   [
+    -1,
+    1,
+    0
+   ],
+   [
+    -1,
+    2,
+    0
+   ],
+   [
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    1,
+    0
+   ]
+  ],
+  "n": 4,
+  "variants": 1
+ },
+ "23:1": {
+  "type": 23,
+  "name": "BankedRightQuarterTurn5",
+  "direction": 1,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    1,
+    0
+   ],
+   [
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    1,
+    0
+   ],
+   [
+    1,
+    2,
+    0
+   ],
+   [
+    2,
+    1,
+    0
+   ],
+   [
+    2,
+    2,
+    0
+   ]
+  ],
+  "n": 27,
+  "variants": 1
+ },
+ "23:2": {
+  "type": 23,
+  "name": "BankedRightQuarterTurn5",
+  "direction": 2,
+  "cells": [
+   [
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    -2,
+    0
+   ],
+   [
+    1,
+    -1,
+    0
+   ],
+   [
+    1,
+    0,
+    0
+   ],
+   [
+    2,
+    -2,
+    0
+   ],
+   [
+    2,
+    -1,
+    0
+   ]
+  ],
+  "n": 28,
+  "variants": 1
+ },
+ "23:3": {
+  "type": 23,
+  "name": "BankedRightQuarterTurn5",
+  "direction": 3,
+  "cells": [
+   [
+    -2,
+    -2,
+    0
+   ],
+   [
+    -2,
+    -1,
+    0
+   ],
+   [
+    -1,
+    -2,
+    0
+   ],
+   [
+    -1,
+    -1,
+    0
+   ],
+   [
+    -1,
+    0,
+    0
+   ],
+   [
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 4,
+  "variants": 1
+ },
+ "32:0": {
+  "type": 32,
+  "name": "LeftBank",
+  "direction": 0,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 1,
+  "variants": 1
+ },
+ "32:1": {
+  "type": 32,
+  "name": "LeftBank",
+  "direction": 1,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 7,
+  "variants": 1
+ },
+ "32:2": {
+  "type": 32,
+  "name": "LeftBank",
+  "direction": 2,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 4,
+  "variants": 1
+ },
+ "32:3": {
+  "type": 32,
+  "name": "LeftBank",
+  "direction": 3,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 1,
+  "variants": 1
+ },
+ "33:0": {
+  "type": 33,
+  "name": "RightBank",
+  "direction": 0,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 2,
+  "variants": 1
+ },
+ "33:1": {
+  "type": 33,
+  "name": "RightBank",
+  "direction": 1,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 3,
+  "variants": 1
+ },
+ "33:2": {
+  "type": 33,
+  "name": "RightBank",
+  "direction": 2,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 10,
+  "variants": 1
+ },
+ "33:3": {
+  "type": 33,
+  "name": "RightBank",
+  "direction": 3,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 7,
+  "variants": 1
+ },
+ "42:0": {
+  "type": 42,
+  "name": "LeftQuarterTurn3",
+  "direction": 0,
+  "cells": [
+   [
+    -1,
+    -1,
+    0
+   ],
+   [
+    -1,
+    0,
+    0
+   ],
+   [
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 15,
+  "variants": 1
+ },
+ "42:1": {
+  "type": 42,
+  "name": "LeftQuarterTurn3",
+  "direction": 1,
+  "cells": [
+   [
+    -1,
+    0,
+    0
+   ],
+   [
+    -1,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    1,
+    0
+   ]
+  ],
+  "n": 26,
+  "variants": 1
+ },
+ "42:2": {
+  "type": 42,
+  "name": "LeftQuarterTurn3",
+  "direction": 2,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    1,
+    0
+   ],
+   [
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    1,
+    0
+   ]
+  ],
+  "n": 29,
+  "variants": 1
+ },
+ "42:3": {
+  "type": 42,
+  "name": "LeftQuarterTurn3",
+  "direction": 3,
+  "cells": [
+   [
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    -1,
+    0
+   ],
+   [
+    1,
+    0,
+    0
+   ]
+  ],
+  "n": 16,
+  "variants": 1
+ },
+ "43:0": {
+  "type": 43,
+  "name": "RightQuarterTurn3",
+  "direction": 0,
+  "cells": [
+   [
+    -1,
+    0,
+    0
+   ],
+   [
+    -1,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    1,
+    0
+   ]
+  ],
+  "n": 22,
+  "variants": 1
+ },
+ "43:1": {
+  "type": 43,
+  "name": "RightQuarterTurn3",
+  "direction": 1,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    1,
+    0
+   ],
+   [
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    1,
+    0
+   ]
+  ],
+  "n": 17,
+  "variants": 1
+ },
+ "43:2": {
+  "type": 43,
+  "name": "RightQuarterTurn3",
+  "direction": 2,
+  "cells": [
+   [
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    -1,
+    0
+   ],
+   [
+    1,
+    0,
+    0
+   ]
+  ],
+  "n": 14,
+  "variants": 1
+ },
+ "43:3": {
+  "type": 43,
+  "name": "RightQuarterTurn3",
+  "direction": 3,
+  "cells": [
+   [
+    -1,
+    -1,
+    0
+   ],
+   [
+    -1,
+    0,
+    0
+   ],
+   [
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 12,
+  "variants": 1
+ },
+ "44:0": {
+  "type": 44,
+  "name": "LeftBankedQuarterTurn3",
+  "direction": 0,
+  "cells": [
+   [
+    -1,
+    -1,
+    0
+   ],
+   [
+    -1,
+    0,
+    0
+   ],
+   [
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 5,
+  "variants": 1
+ },
+ "44:1": {
+  "type": 44,
+  "name": "LeftBankedQuarterTurn3",
+  "direction": 1,
+  "cells": [
+   [
+    -1,
+    0,
+    0
+   ],
+   [
+    -1,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    1,
+    0
+   ]
+  ],
+  "n": 24,
+  "variants": 1
+ },
+ "44:2": {
+  "type": 44,
+  "name": "LeftBankedQuarterTurn3",
+  "direction": 2,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    1,
+    0
+   ],
+   [
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    1,
+    0
+   ]
+  ],
+  "n": 15,
+  "variants": 1
+ },
+ "44:3": {
+  "type": 44,
+  "name": "LeftBankedQuarterTurn3",
+  "direction": 3,
+  "cells": [
+   [
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    -1,
+    0
+   ],
+   [
+    1,
+    0,
+    0
+   ]
+  ],
+  "n": 9,
+  "variants": 1
+ },
+ "45:0": {
+  "type": 45,
+  "name": "RightBankedQuarterTurn3",
+  "direction": 0,
+  "cells": [
+   [
+    -1,
+    0,
+    0
+   ],
+   [
+    -1,
+    1,
+    0
+   ],
+   [
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    1,
+    0
+   ]
+  ],
+  "n": 7,
+  "variants": 1
+ },
+ "45:1": {
+  "type": 45,
+  "name": "RightBankedQuarterTurn3",
+  "direction": 1,
+  "cells": [
+   [
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    1,
+    0
+   ],
+   [
+    1,
+    0,
+    0
+   ],
+   [
+    1,
+    1,
+    0
+   ]
+  ],
+  "n": 8,
+  "variants": 1
+ },
+ "45:2": {
+  "type": 45,
+  "name": "RightBankedQuarterTurn3",
+  "direction": 2,
+  "cells": [
+   [
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    -1,
+    0
+   ],
+   [
+    1,
+    0,
+    0
+   ]
+  ],
+  "n": 7,
+  "variants": 1
+ },
+ "45:3": {
+  "type": 45,
+  "name": "RightBankedQuarterTurn3",
+  "direction": 3,
+  "cells": [
+   [
+    -1,
+    -1,
+    0
+   ],
+   [
+    -1,
+    0,
+    0
+   ],
+   [
+    0,
+    -1,
+    0
+   ],
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "n": 5,
+  "variants": 1
+ }
+}

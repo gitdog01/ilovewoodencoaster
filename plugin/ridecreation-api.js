@@ -230,6 +230,8 @@ function main() {
         ["getAllTrackSegments",  () => handleGetAllTrackSegments()],
         ["deleteAllRides",       () => handleDeleteAllRides()],
         ["deleteRide",           params => handleDeleteRide(params)],
+        ["getRideTiles",         params => handleGetRideTiles(params)],
+        ["getTileElements",      params => handleGetTileElements(params)],
         ["startRideTest",        params => handleStartRideTest(params)],
         ["getRideStats",         params => handleGetRideStats(params)],
         ["getRideMeasurements",  params => handleGetRideMeasurements(params)],
@@ -892,6 +894,73 @@ function main() {
         responsePayload.validNextPieces = computeValidNextPieces(params.ride, justPlaced);
         if (isStationPiece) responsePayload.stationDetected = true;
         return responsePayload;
+    }
+
+    // 라이드가 실제로 쓰고 있는 타일을 전부 내려준다.
+    //
+    // 왜 필요한가: geom/planner.py 의 _footprint_deltas() 는 조각이 어떤 타일을
+    // 쓰는지 진입/진출 바운딩 박스로 **추정**한다 (getAllTrackSegments 가 블록
+    // 목록을 안 준다). 그 추정이 맞는지 확인할 방법이 지금까지 없었고, 배치
+    // 거부의 원인도 그래서 특정이 안 됐다. 여기서 게임의 실제 값을 받아
+    // 파이썬 예측과 대조한다.
+    //
+    // baseZ/clearanceZ 는 raw 단위다 (8 = tileCoordinateZ 1칸).
+    // 타일 하나의 모든 엘리먼트를 내려준다 (지형/트랙/지지대/풍경 전부).
+    //
+    // 배치 거부의 원인을 특정하려고 넣었다. 파이썬은 자기 트랙만 알기 때문에
+    // "왜 거부됐는지"를 추측할 수밖에 없었다 -- 지형에 박힌 건지, 자기 트랙과
+    // 겹친 건지, 다른 무언가인지.
+    async function handleGetTileElements(params) {
+        const { x, y } = params || {};
+        if (typeof x !== "number" || typeof y !== "number") {
+            throw new Error("Missing or invalid parameters: x, y");
+        }
+        const tile = map.getTile(x, y);
+        if (!tile) return { x: x, y: y, elements: [] };
+        const out = [];
+        for (let i = 0; i < tile.numElements; i++) {
+            const e = tile.elements[i];
+            const item = {
+                type: e.type, baseZ: e.baseZ, clearanceZ: e.clearanceZ,
+                baseHeight: e.baseHeight, clearanceHeight: e.clearanceHeight,
+            };
+            if (e.type === "track") {
+                item.ride = e.ride;
+                item.trackType = e.trackType;
+                item.sequence = e.sequence;
+                item.direction = e.direction;
+            }
+            if (e.type === "surface") {
+                item.slope = e.slope;
+                item.waterHeight = e.waterHeight;
+            }
+            out.push(item);
+        }
+        return { x: x, y: y, elements: out };
+    }
+
+    async function handleGetRideTiles(params) {
+        const { rideId } = params || {};
+        if (typeof rideId !== "number") throw new Error("Missing or invalid parameter: rideId");
+        if (!map.getRide(rideId)) throw new Error(`Ride ${rideId} not found`);
+        const tiles = [];
+        for (let x = 0; x < map.size.x; x++) {
+            for (let y = 0; y < map.size.y; y++) {
+                const tile = map.getTile(x, y);
+                if (!tile) continue;
+                for (let i = 0; i < tile.numElements; i++) {
+                    const e = tile.elements[i];
+                    if (e.type !== "track" || e.ride !== rideId) continue;
+                    tiles.push({
+                        x: x, y: y,
+                        baseZ: e.baseZ, clearanceZ: e.clearanceZ,
+                        trackType: e.trackType, direction: e.direction,
+                        sequence: e.sequence,
+                    });
+                }
+            }
+        }
+        return { rideId: rideId, count: tiles.length, tiles: tiles };
     }
 
     function findStationPieces(rideId) {

@@ -125,8 +125,9 @@ class TrackSimulator:
         return remaining >= manhattan + drops + turns
 
 
-def station_tiles(sim, origin, direction, station_length=3):
-    """스테이션 플랫폼이 깔린 타일 전부 + 끝 위치.
+def station_tiles(sim, origin, direction, station_length=3,
+                  reserve_entrance=True):
+    """스테이션이 점유하는 타일 + 끝 위치.
 
     반환: (타일목록, 끝 Pos). 스테이션 조각(1/2/3)은 geometry.json 에 없어서
     (01_extract_geometry.py 가 스테이션 "다음" 조각만 테스트한다) 기하학적으로
@@ -135,6 +136,17 @@ def station_tiles(sim, origin, direction, station_length=3):
 
     이 타일들을 점유로 안 잡으면 트랙 꼬리가 플랫폼 위를 지나는 설계가 나오고
     게임이 배치를 거부한다 (실측: 배치 실패의 절반 이상이 이것이었다).
+
+    **끝 위치는 타일 목록에 안 넣는다** (2026-09-13). 게임이 내려준 실제
+    스테이션 조각은 station_length 개뿐이고 (실측: (65,66)/(66,66)/(67,66)),
+    그 다음 칸 (64,66) 은 첫 트랙 조각이 점유하는 자리다. 실측 footprint
+    (footprints.json) 를 쓰면 조각이 **진입 타일부터** 깔리므로, 여기를
+    점유로 넣으면 첫 조각부터 막힌다.
+
+    reserve_entrance: 입구/출구 건물 자리도 막는다. 플러그인
+    (entranceExitPositionsFor) 이 스테이션 타일의 수직 이웃에 짓는데 파이썬은
+    그 존재를 몰라서, 트랙이 스테이션 옆으로 돌아오면 게임이 거부했다
+    (실측: 거부 21건 중 12건). 건물이 z 로 5칸이라 층층이 넣는다.
     """
     from rct import constants as C
     p = Pos(origin[0], origin[1], origin[2], direction)
@@ -144,5 +156,21 @@ def station_tiles(sim, origin, direction, station_length=3):
         if nxt is None:
             raise RuntimeError("스테이션을 따라갈 수 없습니다")
         p = nxt
-        tiles.append((p.x, p.y, p.z))
+        if len(tiles) < station_length:
+            tiles.append((p.x, p.y, p.z))
+    if reserve_entrance:
+        for tx, ty, tz in list(tiles):
+            for nx, ny in entrance_candidates(tx, ty, direction):
+                tiles += [(nx, ny, tz), (nx, ny, tz + 2), (nx, ny, tz + 4)]
     return tiles, p
+
+
+def entrance_candidates(x, y, direction):
+    """입구/출구가 놓일 수 있는 자리 (스테이션 타일의 수직 이웃 두 칸).
+
+    플러그인의 entranceExitPositionsFor 와 같은 규칙. 어느 쪽에 실제로
+    지어질지는 플러그인의 스캔 순서에 달려 있어서 양쪽 다 막는다.
+    """
+    if direction in (0, 2):
+        return ((x, y - 1), (x, y + 1))
+    return ((x - 1, y), (x + 1, y))
