@@ -117,10 +117,10 @@ def _close(P, seq, goal, start, bounds, close_budget, rewinds, seed_cells,
         occ.add(cells)
         # 맨턴 없이 먼저 닫아본다. 맨턴은 좌우G를 그대로 올려서 조건을
         # 어기는 방향이라, 마무리 구간이 조건을 망치지 않게 한다.
-        tail = P.plan(end, goal, bounds, occ, budget=close_budget + 8,
-                      exclude=PLAIN_TURNS)
+        tail = P.plan_safe(end, goal, bounds, occ, budget=close_budget + 8,
+                           exclude=PLAIN_TURNS)
         if tail is None:
-            tail = P.plan(end, goal, bounds, occ, budget=close_budget)
+            tail = P.plan_safe(end, goal, bounds, occ, budget=close_budget)
         if tail is not None:
             return head + [(t, False) for t in tail]
     return None

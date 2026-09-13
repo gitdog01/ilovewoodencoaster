@@ -207,10 +207,10 @@ def plan_episode(sim: TrackSimulator, station_end: State, goal: State,
             # 이라 실패해도 게임 왕복이 없으니, 폴백 대신 재설계가 싸게 먹힌다.
             tail = None
             if banked:
-                tail = P.plan(st, goal, rb, occ1, budget=close_budget + 8,
-                              exclude=PLAIN_TURNS)
+                tail = P.plan_safe(st, goal, rb, occ1, budget=close_budget + 8,
+                                   exclude=PLAIN_TURNS)
             if tail is None and not (banked and strict_banked):
-                tail = P.plan(st, goal, rb, occ1, budget=close_budget)
+                tail = P.plan_safe(st, goal, rb, occ1, budget=close_budget)
             if tail is not None:
                 return ([(t, True) for t, _ in lift]
                         + [(t, False) for t in drop + head + tail])

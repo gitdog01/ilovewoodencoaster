@@ -251,6 +251,46 @@ class Planner:
                 heapq.heappush(openq, (ng + nh, ng, nxt.key(), nxt, path + (t,)))
         return None
 
+    def plan_safe(self, start: State, goal: State, bounds: Bounds = None,
+                  occupied=None, budget=40, max_expand=60000, exclude=(),
+                  repairs=4):
+        """plan() 과 같지만 **꼬리가 자기 자신과 안 겹치는 것까지** 보장한다.
+
+        plan() 의 A* 는 넘겨받은 occupied 만 본다. 경로가 진행하며 새로 쓰는
+        타일은 추적하지 않아서 꼬리가 자기 자신을 가로지를 수 있다.
+        2026-09-13 실측: 남은 배치 거부의 77% 가 이것이었다 ("파이썬도 그 자리에
+        트랙이 있는 걸 아는데 거기 놨다"로 잡혔다).
+
+        노드마다 점유 집합을 들고 다니면 best[] 의 지배 관계가 깨져서 (같은
+        상태라도 지나온 타일이 다르면 다른 노드다) 탐색이 터진다. 그래서 나온
+        답을 검사하고, 겹치면 겹치기 직전까지의 타일을 막고 다시 부른다.
+        """
+        occupied = occupied if occupied is not None else Occupancy()
+        work = occupied
+        for _ in range(repairs + 1):
+            tail = self.plan(start, goal, bounds, work, budget, max_expand,
+                             exclude)
+            if tail is None:
+                return None
+            used, s, hit = Occupancy(work.ztol), start, None
+            for i, t in enumerate(tail):
+                nxt, cells = next(((n, c) for tt, n, c in self.successors(s)
+                                   if tt == t), (None, None))
+                if nxt is None:
+                    hit = (i, ())
+                    break
+                if used.blocked(cells):
+                    hit = (i, cells)
+                    break
+                used.add(cells)
+                s = nxt
+            if hit is None:
+                return tail                      # 자기교차 없음
+            # 겹치기 직전까지 쓴 타일을 막고 다시 찾는다.
+            work = work.copy()
+            work.cells |= used.cells
+        return None
+
     # -- 무작위 워크 ------------------------------------------------------
     def wander(self, start: State, goal: State, bounds: Bounds, occupied,
                steps, weights, reserve):
