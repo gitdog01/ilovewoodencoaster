@@ -76,10 +76,15 @@ def _follow(P, s, seq, bounds, occupied):
 def generate_closed(model, tok, cond, sim, bounds, start: State, goal: State,
                     n, device, close_budget=24, temperature=0.9, top_k=None,
                     max_new_tokens=120, rewinds=(0, 2, 4, 7, 11),
-                    station_tiles=()):
+                    station_tiles=(), ztol=2):
     """조건을 주고 폐곡선 트랙 n개를 시도한다. [(조각, 체인), ...] 목록을 반환.
 
     닫는 데 실패한 후보는 결과에서 빠진다 (best-of-N 이므로 몇 개만 살아도 된다).
+
+    ztol 은 자기충돌로 볼 세로 여유다. 2026-09-13 에 2/4/6/8 을 게임으로 재봤는데
+    **배치 성공률에 유의한 차이가 없었다** -- 시드 간 분산(12포인트)이 효과보다
+    크다 (CLAUDE.md "새로 알게 된 것 3"). 기본값 2 를 유지한다. 다시 재려면
+    시드를 여러 개 쓸 것. 하나만 보면 단조 상승처럼 보여서 속는다.
     """
     P = planner_for(sim)
     prefix = ([tok.stoi["<bos>"]] + tok.encode_condition(**cond)
@@ -87,7 +92,7 @@ def generate_closed(model, tok, cond, sim, bounds, start: State, goal: State,
     x = torch.tensor([prefix] * n, dtype=torch.long, device=device)
 
     seed = list(station_tiles) or [start.cell(), goal.cell()]
-    con = BoundsConstraint(sim, tok, bounds, start, goal, n,
+    con = BoundsConstraint(sim, tok, bounds, start, goal, n, ztol=ztol,
                            reserve=close_budget, seed_cells=seed)
     out = model.generate(x, max_new_tokens=max_new_tokens,
                          temperature=temperature, top_k=top_k,
@@ -102,15 +107,17 @@ def generate_closed(model, tok, cond, sim, bounds, start: State, goal: State,
         seq = tok.decode(body)
         if not seq:
             continue
-        closed = _close(P, seq, goal, start, bounds, close_budget, rewinds, seed)
+        closed = _close(P, seq, goal, start, bounds, close_budget, rewinds,
+                        seed, ztol)
         if closed is not None:
             results.append(closed)
     return results
 
 
-def _close(P, seq, goal, start, bounds, close_budget, rewinds, seed_cells):
+def _close(P, seq, goal, start, bounds, close_budget, rewinds, seed_cells,
+           ztol=2):
     """LM 이 뽑은 본체 뒤에 A* 꼬리를 붙인다. 실패하면 None."""
-    base = Occupancy(2, list(seed_cells))
+    base = Occupancy(ztol, list(seed_cells))
     for back in rewinds:
         if back >= len(seq):
             break
