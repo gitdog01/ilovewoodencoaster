@@ -1,0 +1,1752 @@
+{
+ "0": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 1
+ },
+ "1": {
+  "description": "탑승장 선택",
+  "length": 32,
+  "trackGroup": 2
+ },
+ "10": {
+  "description": "",
+  "length": 33,
+  "trackGroup": 8
+ },
+ "100": {
+  "description": "부스터",
+  "length": 32,
+  "trackGroup": 49
+ },
+ "101": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 0
+ },
+ "102": {
+  "description": "1/4 나선 상승",
+  "length": 124,
+  "trackGroup": 24
+ },
+ "103": {
+  "description": "1/4 나선 상승",
+  "length": 124,
+  "trackGroup": 24
+ },
+ "104": {
+  "description": "1/4 나선 하강",
+  "length": 124,
+  "trackGroup": 25
+ },
+ "105": {
+  "description": "1/4 나선 하강",
+  "length": 124,
+  "trackGroup": 25
+ },
+ "106": {
+  "description": "1/4 나선 상승 (왼쪽)",
+  "length": 124,
+  "trackGroup": 26
+ },
+ "107": {
+  "description": "1/4 나선 상승 (오른쪽)",
+  "length": 124,
+  "trackGroup": 26
+ },
+ "108": {
+  "description": "1/4 나선 하강 (왼쪽)",
+  "length": 124,
+  "trackGroup": 27
+ },
+ "109": {
+  "description": "1/4 나선 하강 (오른쪽)",
+  "length": 124,
+  "trackGroup": 27
+ },
+ "11": {
+  "description": "",
+  "length": 40,
+  "trackGroup": 9
+ },
+ "110": {
+  "description": "",
+  "length": 33,
+  "trackGroup": 42
+ },
+ "111": {
+  "description": "",
+  "length": 33,
+  "trackGroup": 42
+ },
+ "112": {
+  "description": "폭포",
+  "length": 32,
+  "trackGroup": 60
+ },
+ "113": {
+  "description": "급류",
+  "length": 32,
+  "trackGroup": 56
+ },
+ "114": {
+  "description": "탑승 사진 섹션",
+  "length": 32,
+  "trackGroup": 29
+ },
+ "115": {
+  "description": "",
+  "length": 33,
+  "trackGroup": 42
+ },
+ "116": {
+  "description": "",
+  "length": 33,
+  "trackGroup": 42
+ },
+ "117": {
+  "description": "물 튀김",
+  "length": 128,
+  "trackGroup": 30
+ },
+ "118": {
+  "description": "",
+  "length": 165,
+  "trackGroup": 43
+ },
+ "119": {
+  "description": "",
+  "length": 165,
+  "trackGroup": 43
+ },
+ "12": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 8
+ },
+ "120": {
+  "description": "소용돌이",
+  "length": 32,
+  "trackGroup": 61
+ },
+ "121": {
+  "description": "",
+  "length": 165,
+  "trackGroup": 43
+ },
+ "122": {
+  "description": "",
+  "length": 165,
+  "trackGroup": 43
+ },
+ "123": {
+  "description": "케이블 리프트 힐",
+  "length": 138,
+  "trackGroup": 45
+ },
+ "124": {
+  "description": "수직으로 상승",
+  "length": 32,
+  "trackGroup": 39
+ },
+ "125": {
+  "description": "수직 트랙",
+  "length": 32,
+  "trackGroup": 39
+ },
+ "126": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 0
+ },
+ "127": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 0
+ },
+ "128": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 0
+ },
+ "129": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 0
+ },
+ "13": {
+  "description": "",
+  "length": 34,
+  "trackGroup": 9
+ },
+ "130": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 0
+ },
+ "131": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 0
+ },
+ "132": {
+  "description": "낙하 브레이크",
+  "length": 32,
+  "trackGroup": 62
+ },
+ "133": {
+  "description": "",
+  "length": 87,
+  "trackGroup": 0
+ },
+ "134": {
+  "description": "",
+  "length": 87,
+  "trackGroup": 0
+ },
+ "135": {
+  "description": "",
+  "length": 87,
+  "trackGroup": 0
+ },
+ "136": {
+  "description": "",
+  "length": 87,
+  "trackGroup": 0
+ },
+ "137": {
+  "description": "",
+  "length": 87,
+  "trackGroup": 0
+ },
+ "138": {
+  "description": "",
+  "length": 87,
+  "trackGroup": 0
+ },
+ "139": {
+  "description": "",
+  "length": 87,
+  "trackGroup": 0
+ },
+ "14": {
+  "description": "",
+  "length": 34,
+  "trackGroup": 9
+ },
+ "140": {
+  "description": "",
+  "length": 87,
+  "trackGroup": 0
+ },
+ "141": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 0
+ },
+ "142": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 87
+ },
+ "143": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 88
+ },
+ "144": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 87
+ },
+ "145": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 88
+ },
+ "146": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 88
+ },
+ "147": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 87
+ },
+ "148": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 87
+ },
+ "149": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 89
+ },
+ "15": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 8
+ },
+ "150": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 87
+ },
+ "151": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 89
+ },
+ "152": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 89
+ },
+ "153": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 87
+ },
+ "154": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 88
+ },
+ "155": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 88
+ },
+ "156": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 89
+ },
+ "157": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 89
+ },
+ "158": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 0
+ },
+ "159": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 0
+ },
+ "16": {
+  "description": "",
+  "length": 124,
+  "trackGroup": 16
+ },
+ "160": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 0
+ },
+ "161": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 0
+ },
+ "162": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 0
+ },
+ "163": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 0
+ },
+ "164": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 0
+ },
+ "165": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 0
+ },
+ "166": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 0
+ },
+ "167": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 0
+ },
+ "168": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 0
+ },
+ "169": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 0
+ },
+ "17": {
+  "description": "",
+  "length": 124,
+  "trackGroup": 16
+ },
+ "170": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 0
+ },
+ "171": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 0
+ },
+ "172": {
+  "description": "역방향 턴테이블",
+  "length": 16,
+  "trackGroup": 36
+ },
+ "173": {
+  "description": "회전 터널",
+  "length": 32,
+  "trackGroup": 48
+ },
+ "174": {
+  "description": "바렐 롤 (왼쪽)",
+  "length": 96,
+  "trackGroup": 32
+ },
+ "175": {
+  "description": "바렐 롤 (오른쪽)",
+  "length": 96,
+  "trackGroup": 32
+ },
+ "176": {
+  "description": "바렐 롤 (왼쪽)",
+  "length": 96,
+  "trackGroup": 32
+ },
+ "177": {
+  "description": "바렐 롤 (오른쪽)",
+  "length": 96,
+  "trackGroup": 32
+ },
+ "178": {
+  "description": "",
+  "length": 64,
+  "trackGroup": 0
+ },
+ "179": {
+  "description": "",
+  "length": 64,
+  "trackGroup": 0
+ },
+ "18": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 6
+ },
+ "180": {
+  "description": "",
+  "length": 64,
+  "trackGroup": 0
+ },
+ "181": {
+  "description": "",
+  "length": 64,
+  "trackGroup": 0
+ },
+ "182": {
+  "description": "런치드 리프트 힐",
+  "length": 32,
+  "trackGroup": 33
+ },
+ "183": {
+  "description": "대형 하프 루프 (왼쪽)",
+  "length": 100,
+  "trackGroup": 34
+ },
+ "184": {
+  "description": "대형 하프 루프 (오른쪽)",
+  "length": 100,
+  "trackGroup": 34
+ },
+ "185": {
+  "description": "대형 하프 루프 (왼쪽)",
+  "length": 100,
+  "trackGroup": 34
+ },
+ "186": {
+  "description": "대형 하프 루프 (오른쪽)",
+  "length": 100,
+  "trackGroup": 34
+ },
+ "187": {
+  "description": "인라인 트위스트 (왼쪽)",
+  "length": 96,
+  "trackGroup": 50
+ },
+ "188": {
+  "description": "인라인 트위스트 (오른쪽)",
+  "length": 96,
+  "trackGroup": 50
+ },
+ "189": {
+  "description": "인라인 트위스트 (왼쪽)",
+  "length": 96,
+  "trackGroup": 51
+ },
+ "19": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 6
+ },
+ "190": {
+  "description": "인라인 트위스트 (오른쪽)",
+  "length": 96,
+  "trackGroup": 51
+ },
+ "191": {
+  "description": "소형 1/2 루프",
+  "length": 64,
+  "trackGroup": 57
+ },
+ "192": {
+  "description": "소형 1/2 루프",
+  "length": 64,
+  "trackGroup": 58
+ },
+ "193": {
+  "description": "1/2 나선 (왼쪽)",
+  "length": 64,
+  "trackGroup": 63
+ },
+ "194": {
+  "description": "1/2 나선 (오른쪽)",
+  "length": 64,
+  "trackGroup": 63
+ },
+ "195": {
+  "description": "1/2 나선 (왼쪽)",
+  "length": 64,
+  "trackGroup": 64
+ },
+ "196": {
+  "description": "1/2 나선 (오른쪽)",
+  "length": 64,
+  "trackGroup": 64
+ },
+ "197": {
+  "description": "위쪽 전송기",
+  "length": 16,
+  "trackGroup": 65
+ },
+ "198": {
+  "description": "아래쪽 전송기",
+  "length": 16,
+  "trackGroup": 65
+ },
+ "199": {
+  "description": "하트라인 롤 (왼쪽)",
+  "length": 64,
+  "trackGroup": 37
+ },
+ "2": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 2
+ },
+ "20": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 6
+ },
+ "200": {
+  "description": "하트라인 롤 (오른쪽)",
+  "length": 64,
+  "trackGroup": 37
+ },
+ "201": {
+  "description": "골프 홀 A",
+  "length": 32,
+  "trackGroup": 66
+ },
+ "202": {
+  "description": "골프 홀 B",
+  "length": 32,
+  "trackGroup": 66
+ },
+ "203": {
+  "description": "골프 홀 C",
+  "length": 32,
+  "trackGroup": 66
+ },
+ "204": {
+  "description": "골프 홀 D",
+  "length": 32,
+  "trackGroup": 66
+ },
+ "205": {
+  "description": "골프 홀 E",
+  "length": 32,
+  "trackGroup": 66
+ },
+ "206": {
+  "description": "1/4 루프",
+  "length": 80,
+  "trackGroup": 55
+ },
+ "207": {
+  "description": "1/4 루프",
+  "length": 80,
+  "trackGroup": 47
+ },
+ "208": {
+  "description": "1/4 루프",
+  "length": 80,
+  "trackGroup": 47
+ },
+ "209": {
+  "description": "커브드 리프트 힐 (왼쪽)",
+  "length": 64,
+  "trackGroup": 46
+ },
+ "21": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 6
+ },
+ "210": {
+  "description": "커브드 리프트 힐 (오른쪽)",
+  "length": 64,
+  "trackGroup": 46
+ },
+ "211": {
+  "description": "리버서 (왼쪽)",
+  "length": 32,
+  "trackGroup": 38
+ },
+ "212": {
+  "description": "리버서 (오른쪽)",
+  "length": 32,
+  "trackGroup": 38
+ },
+ "213": {
+  "description": "탑 섹션",
+  "length": 32,
+  "trackGroup": 40
+ },
+ "214": {
+  "description": "수직 트랙",
+  "length": 32,
+  "trackGroup": 40
+ },
+ "215": {
+  "description": "평지로",
+  "length": 32,
+  "trackGroup": 40
+ },
+ "216": {
+  "description": "블록 브레이크",
+  "length": 32,
+  "trackGroup": 41
+ },
+ "217": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 11
+ },
+ "218": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 11
+ },
+ "219": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 11
+ },
+ "22": {
+  "description": "",
+  "length": 124,
+  "trackGroup": 6
+ },
+ "220": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 11
+ },
+ "221": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 11
+ },
+ "222": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 11
+ },
+ "223": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 11
+ },
+ "224": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 11
+ },
+ "225": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 42
+ },
+ "226": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 42
+ },
+ "227": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 42
+ },
+ "228": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 42
+ },
+ "229": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 42
+ },
+ "23": {
+  "description": "",
+  "length": 124,
+  "trackGroup": 6
+ },
+ "230": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 42
+ },
+ "231": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 42
+ },
+ "232": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 42
+ },
+ "233": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 42
+ },
+ "234": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 42
+ },
+ "235": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 42
+ },
+ "236": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 42
+ },
+ "237": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 42
+ },
+ "238": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 42
+ },
+ "239": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 42
+ },
+ "24": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 6
+ },
+ "240": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 42
+ },
+ "241": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 42
+ },
+ "242": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 42
+ },
+ "243": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 42
+ },
+ "244": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 42
+ },
+ "245": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 42
+ },
+ "246": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 42
+ },
+ "247": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 42
+ },
+ "248": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 42
+ },
+ "249": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 12
+ },
+ "25": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 6
+ },
+ "250": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 12
+ },
+ "251": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 12
+ },
+ "252": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 12
+ },
+ "253": {
+  "description": "1/4 루프",
+  "length": 80,
+  "trackGroup": 52
+ },
+ "254": {
+  "description": "1/4 루프",
+  "length": 80,
+  "trackGroup": 53
+ },
+ "255": {
+  "description": "1/4 루프",
+  "length": 80,
+  "trackGroup": 54
+ },
+ "256": {
+  "description": "회전 컨트롤 전환 트랙",
+  "length": 32,
+  "trackGroup": 67
+ },
+ "257": {
+  "description": "",
+  "length": 0,
+  "trackGroup": 59
+ },
+ "258": {
+  "description": "기본 크기 2 × 2",
+  "length": 0,
+  "trackGroup": 59
+ },
+ "259": {
+  "description": "기본 크기 4 × 4",
+  "length": 0,
+  "trackGroup": 59
+ },
+ "26": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 6
+ },
+ "260": {
+  "description": "기본 크기 2 × 4",
+  "length": 0,
+  "trackGroup": 59
+ },
+ "261": {
+  "description": "기본 크기 5 × 1",
+  "length": 0,
+  "trackGroup": 59
+ },
+ "262": {
+  "description": "",
+  "length": 0,
+  "trackGroup": 59
+ },
+ "263": {
+  "description": "",
+  "length": 0,
+  "trackGroup": 59
+ },
+ "264": {
+  "description": "",
+  "length": 0,
+  "trackGroup": 59
+ },
+ "265": {
+  "description": "",
+  "length": 0,
+  "trackGroup": 59
+ },
+ "266": {
+  "description": "",
+  "length": 0,
+  "trackGroup": 59
+ },
+ "267": {
+  "description": "대형 1/2 나선 (왼쪽)",
+  "length": 96,
+  "trackGroup": 69
+ },
+ "268": {
+  "description": "대형 1/2 나선 (오른쪽)",
+  "length": 96,
+  "trackGroup": 69
+ },
+ "269": {
+  "description": "대형 1/2 나선 (왼쪽)",
+  "length": 96,
+  "trackGroup": 69
+ },
+ "27": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 6
+ },
+ "270": {
+  "description": "대형 1/2 나선 (오른쪽)",
+  "length": 96,
+  "trackGroup": 69
+ },
+ "271": {
+  "description": "중형 하프 루프 (왼쪽)",
+  "length": 80,
+  "trackGroup": 70
+ },
+ "272": {
+  "description": "중형 하프 루프 (오른쪽)",
+  "length": 80,
+  "trackGroup": 70
+ },
+ "273": {
+  "description": "중형 하프 루프 (왼쪽)",
+  "length": 80,
+  "trackGroup": 70
+ },
+ "274": {
+  "description": "중형 하프 루프 (오른쪽)",
+  "length": 80,
+  "trackGroup": 70
+ },
+ "275": {
+  "description": "제로 G 롤 (왼쪽)",
+  "length": 96,
+  "trackGroup": 71
+ },
+ "276": {
+  "description": "제로 G 롤 (오른쪽)",
+  "length": 96,
+  "trackGroup": 71
+ },
+ "277": {
+  "description": "제로 G 롤 (왼쪽)",
+  "length": 96,
+  "trackGroup": 71
+ },
+ "278": {
+  "description": "제로 G 롤 (오른쪽)",
+  "length": 96,
+  "trackGroup": 71
+ },
+ "279": {
+  "description": "대형 제로 G 롤 (왼쪽)",
+  "length": 165,
+  "trackGroup": 72
+ },
+ "28": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 6
+ },
+ "280": {
+  "description": "대형 제로 G 롤 (오른쪽)",
+  "length": 165,
+  "trackGroup": 72
+ },
+ "281": {
+  "description": "대형 제로 G 롤 (왼쪽)",
+  "length": 165,
+  "trackGroup": 72
+ },
+ "282": {
+  "description": "대형 제로 G 롤 (오른쪽)",
+  "length": 165,
+  "trackGroup": 72
+ },
+ "283": {
+  "description": "대형 하프 루프 (왼쪽)",
+  "length": 100,
+  "trackGroup": 73
+ },
+ "284": {
+  "description": "대형 하프 루프 (오른쪽)",
+  "length": 100,
+  "trackGroup": 73
+ },
+ "285": {
+  "description": "대형 하프 루프 (왼쪽)",
+  "length": 100,
+  "trackGroup": 74
+ },
+ "286": {
+  "description": "대형 하프 루프 (오른쪽)",
+  "length": 100,
+  "trackGroup": 74
+ },
+ "287": {
+  "description": "대형 하프 루프 (왼쪽)",
+  "length": 100,
+  "trackGroup": 76
+ },
+ "288": {
+  "description": "대형 하프 루프 (오른쪽)",
+  "length": 100,
+  "trackGroup": 76
+ },
+ "289": {
+  "description": "대형 하프 루프 (왼쪽)",
+  "length": 100,
+  "trackGroup": 75
+ },
+ "29": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 6
+ },
+ "290": {
+  "description": "대형 하프 루프 (오른쪽)",
+  "length": 100,
+  "trackGroup": 75
+ },
+ "291": {
+  "description": "소형 1/2 루프",
+  "length": 64,
+  "trackGroup": 78
+ },
+ "292": {
+  "description": "소형 1/2 루프",
+  "length": 64,
+  "trackGroup": 77
+ },
+ "293": {
+  "description": "",
+  "length": 92,
+  "trackGroup": 79
+ },
+ "294": {
+  "description": "",
+  "length": 92,
+  "trackGroup": 79
+ },
+ "295": {
+  "description": "",
+  "length": 92,
+  "trackGroup": 79
+ },
+ "296": {
+  "description": "",
+  "length": 92,
+  "trackGroup": 79
+ },
+ "297": {
+  "description": "",
+  "length": 92,
+  "trackGroup": 79
+ },
+ "298": {
+  "description": "",
+  "length": 92,
+  "trackGroup": 79
+ },
+ "299": {
+  "description": "",
+  "length": 92,
+  "trackGroup": 79
+ },
+ "3": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 2
+ },
+ "30": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 6
+ },
+ "300": {
+  "description": "",
+  "length": 92,
+  "trackGroup": 79
+ },
+ "301": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 80
+ },
+ "302": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 80
+ },
+ "303": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 80
+ },
+ "304": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 80
+ },
+ "305": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 80
+ },
+ "306": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 80
+ },
+ "307": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 80
+ },
+ "308": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 80
+ },
+ "309": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 80
+ },
+ "31": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 6
+ },
+ "310": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 80
+ },
+ "311": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 80
+ },
+ "312": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 80
+ },
+ "313": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 80
+ },
+ "314": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 80
+ },
+ "315": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 80
+ },
+ "316": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 80
+ },
+ "317": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 80
+ },
+ "318": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 80
+ },
+ "319": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 80
+ },
+ "32": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 6
+ },
+ "320": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 80
+ },
+ "321": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 80
+ },
+ "322": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 80
+ },
+ "323": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 80
+ },
+ "324": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 80
+ },
+ "325": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 80
+ },
+ "326": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 80
+ },
+ "327": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 80
+ },
+ "328": {
+  "description": "",
+  "length": 45,
+  "trackGroup": 80
+ },
+ "329": {
+  "description": "",
+  "length": 92,
+  "trackGroup": 80
+ },
+ "33": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 6
+ },
+ "330": {
+  "description": "",
+  "length": 92,
+  "trackGroup": 80
+ },
+ "331": {
+  "description": "",
+  "length": 92,
+  "trackGroup": 80
+ },
+ "332": {
+  "description": "",
+  "length": 92,
+  "trackGroup": 80
+ },
+ "333": {
+  "description": "",
+  "length": 92,
+  "trackGroup": 80
+ },
+ "334": {
+  "description": "",
+  "length": 92,
+  "trackGroup": 80
+ },
+ "335": {
+  "description": "",
+  "length": 92,
+  "trackGroup": 80
+ },
+ "336": {
+  "description": "",
+  "length": 92,
+  "trackGroup": 80
+ },
+ "337": {
+  "description": "브레이크",
+  "length": 45,
+  "trackGroup": 81
+ },
+ "338": {
+  "description": "블록 브레이크",
+  "length": 45,
+  "trackGroup": 82
+ },
+ "339": {
+  "description": "브레이크",
+  "length": 33,
+  "trackGroup": 83
+ },
+ "34": {
+  "description": "",
+  "length": 130,
+  "trackGroup": 11
+ },
+ "340": {
+  "description": "부스터",
+  "length": 45,
+  "trackGroup": 84
+ },
+ "341": {
+  "description": "",
+  "length": 165,
+  "trackGroup": 43
+ },
+ "342": {
+  "description": "",
+  "length": 165,
+  "trackGroup": 43
+ },
+ "343": {
+  "description": "",
+  "length": 165,
+  "trackGroup": 43
+ },
+ "344": {
+  "description": "",
+  "length": 165,
+  "trackGroup": 43
+ },
+ "345": {
+  "description": "다이브 루프 (왼쪽)",
+  "length": 165,
+  "trackGroup": 86
+ },
+ "346": {
+  "description": "다이브 루프 (오른쪽)",
+  "length": 165,
+  "trackGroup": 86
+ },
+ "347": {
+  "description": "다이브 루프 (왼쪽)",
+  "length": 165,
+  "trackGroup": 86
+ },
+ "348": {
+  "description": "다이브 루프 (오른쪽)",
+  "length": 165,
+  "trackGroup": 86
+ },
+ "349": {
+  "description": "브레이크",
+  "length": 45,
+  "trackGroup": 83
+ },
+ "35": {
+  "description": "",
+  "length": 130,
+  "trackGroup": 11
+ },
+ "36": {
+  "description": "",
+  "length": 130,
+  "trackGroup": 11
+ },
+ "37": {
+  "description": "",
+  "length": 130,
+  "trackGroup": 11
+ },
+ "38": {
+  "description": "S자 트랙 (왼쪽)",
+  "length": 96,
+  "trackGroup": 13
+ },
+ "39": {
+  "description": "S자 트랙 (오른쪽)",
+  "length": 96,
+  "trackGroup": 13
+ },
+ "4": {
+  "description": "",
+  "length": 33,
+  "trackGroup": 8
+ },
+ "40": {
+  "description": "수직 루프 (왼쪽)",
+  "length": 120,
+  "trackGroup": 7
+ },
+ "41": {
+  "description": "수직 루프 (오른쪽)",
+  "length": 120,
+  "trackGroup": 7
+ },
+ "42": {
+  "description": "",
+  "length": 75,
+  "trackGroup": 15
+ },
+ "43": {
+  "description": "",
+  "length": 75,
+  "trackGroup": 15
+ },
+ "44": {
+  "description": "",
+  "length": 75,
+  "trackGroup": 6
+ },
+ "45": {
+  "description": "",
+  "length": 75,
+  "trackGroup": 6
+ },
+ "46": {
+  "description": "",
+  "length": 77,
+  "trackGroup": 11
+ },
+ "47": {
+  "description": "",
+  "length": 77,
+  "trackGroup": 11
+ },
+ "48": {
+  "description": "",
+  "length": 77,
+  "trackGroup": 11
+ },
+ "49": {
+  "description": "",
+  "length": 77,
+  "trackGroup": 11
+ },
+ "5": {
+  "description": "",
+  "length": 40,
+  "trackGroup": 68
+ },
+ "50": {
+  "description": "",
+  "length": 24,
+  "trackGroup": 14
+ },
+ "51": {
+  "description": "",
+  "length": 24,
+  "trackGroup": 14
+ },
+ "52": {
+  "description": "인라인 트위스트 (왼쪽)",
+  "length": 96,
+  "trackGroup": 18
+ },
+ "53": {
+  "description": "인라인 트위스트 (오른쪽)",
+  "length": 96,
+  "trackGroup": 18
+ },
+ "54": {
+  "description": "인라인 트위스트 (왼쪽)",
+  "length": 96,
+  "trackGroup": 18
+ },
+ "55": {
+  "description": "인라인 트위스트 (오른쪽)",
+  "length": 96,
+  "trackGroup": 18
+ },
+ "56": {
+  "description": "소형 1/2 루프",
+  "length": 60,
+  "trackGroup": 19
+ },
+ "57": {
+  "description": "소형 1/2 루프",
+  "length": 60,
+  "trackGroup": 19
+ },
+ "58": {
+  "description": "1/2 나선 (왼쪽)",
+  "length": 55,
+  "trackGroup": 20
+ },
+ "59": {
+  "description": "1/2 나선 (오른쪽)",
+  "length": 55,
+  "trackGroup": 20
+ },
+ "6": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 8
+ },
+ "60": {
+  "description": "1/2 나선 (왼쪽)",
+  "length": 55,
+  "trackGroup": 20
+ },
+ "61": {
+  "description": "1/2 나선 (오른쪽)",
+  "length": 55,
+  "trackGroup": 20
+ },
+ "62": {
+  "description": "",
+  "length": 36,
+  "trackGroup": 10
+ },
+ "63": {
+  "description": "",
+  "length": 36,
+  "trackGroup": 10
+ },
+ "64": {
+  "description": "",
+  "length": 36,
+  "trackGroup": 10
+ },
+ "65": {
+  "description": "",
+  "length": 36,
+  "trackGroup": 10
+ },
+ "66": {
+  "description": "탑승장 출입구",
+  "length": 32,
+  "trackGroup": 21
+ },
+ "67": {
+  "description": "버티컬 타워",
+  "length": 32,
+  "trackGroup": 21
+ },
+ "68": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 0
+ },
+ "69": {
+  "description": "",
+  "length": 33,
+  "trackGroup": 0
+ },
+ "7": {
+  "description": "",
+  "length": 34,
+  "trackGroup": 68
+ },
+ "70": {
+  "description": "",
+  "length": 40,
+  "trackGroup": 0
+ },
+ "71": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 0
+ },
+ "72": {
+  "description": "",
+  "length": 34,
+  "trackGroup": 0
+ },
+ "73": {
+  "description": "",
+  "length": 34,
+  "trackGroup": 0
+ },
+ "74": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 0
+ },
+ "75": {
+  "description": "",
+  "length": 33,
+  "trackGroup": 0
+ },
+ "76": {
+  "description": "",
+  "length": 40,
+  "trackGroup": 0
+ },
+ "77": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 0
+ },
+ "78": {
+  "description": "",
+  "length": 34,
+  "trackGroup": 0
+ },
+ "79": {
+  "description": "",
+  "length": 34,
+  "trackGroup": 0
+ },
+ "8": {
+  "description": "",
+  "length": 34,
+  "trackGroup": 68
+ },
+ "80": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 0
+ },
+ "81": {
+  "description": "",
+  "length": 124,
+  "trackGroup": 0
+ },
+ "82": {
+  "description": "",
+  "length": 124,
+  "trackGroup": 0
+ },
+ "83": {
+  "description": "S자 트랙 (왼쪽)",
+  "length": 96,
+  "trackGroup": 0
+ },
+ "84": {
+  "description": "S자 트랙 (오른쪽)",
+  "length": 96,
+  "trackGroup": 0
+ },
+ "85": {
+  "description": "",
+  "length": 75,
+  "trackGroup": 0
+ },
+ "86": {
+  "description": "",
+  "length": 75,
+  "trackGroup": 0
+ },
+ "87": {
+  "description": "1/2 나선 상승 (작음)",
+  "length": 150,
+  "trackGroup": 22
+ },
+ "88": {
+  "description": "1/2 나선 상승 (작음)",
+  "length": 150,
+  "trackGroup": 22
+ },
+ "89": {
+  "description": "1/2 나선 하강 (작음)",
+  "length": 150,
+  "trackGroup": 23
+ },
+ "9": {
+  "description": "",
+  "length": 32,
+  "trackGroup": 8
+ },
+ "90": {
+  "description": "1/2 나선 하강 (작음)",
+  "length": 150,
+  "trackGroup": 23
+ },
+ "91": {
+  "description": "1/2 나선 상승 (큼)",
+  "length": 248,
+  "trackGroup": 22
+ },
+ "92": {
+  "description": "1/2 나선 상승 (큼)",
+  "length": 248,
+  "trackGroup": 22
+ },
+ "93": {
+  "description": "1/2 나선 하강 (큼)",
+  "length": 248,
+  "trackGroup": 23
+ },
+ "94": {
+  "description": "1/2 나선 하강 (큼)",
+  "length": 248,
+  "trackGroup": 23
+ },
+ "95": {
+  "description": "",
+  "length": 64,
+  "trackGroup": 12
+ },
+ "96": {
+  "description": "",
+  "length": 64,
+  "trackGroup": 12
+ },
+ "97": {
+  "description": "",
+  "length": 64,
+  "trackGroup": 12
+ },
+ "98": {
+  "description": "",
+  "length": 64,
+  "trackGroup": 12
+ },
+ "99": {
+  "description": "브레이크",
+  "length": 32,
+  "trackGroup": 28
+ }
+}
