@@ -86,8 +86,12 @@ def _footprint_deltas(dx, dy, dz):
     안 탄다. 어휘를 넓히면 09_extract_footprints.py 를 다시 돌릴 것 -- 헬릭스류는
     이 추정으로 179~216타일이 나와서 쓸 수가 없다.
     """
+    # 2026-09-13: **진입 타일을 넣고 진출 타일을 뺀다.** 실측 표와 같은 규약이다.
+    # 예전에는 정반대였는데, 그 상태로 폴백을 타면 그 조각이 다음 조각의 진입
+    # 타일을 차지해서 **항상 충돌로 걸린다.** 브레이크를 어휘에 넣었더니 트랙
+    # 24개에서 한 번도 안 쓰이길래 찾았다 (브레이크만 실측 표에 없어서 폴백을 탔다).
     if abs(dx) + abs(dy) <= 1:
-        return ((dx, dy, dz),)
+        return ((0, 0, 0),)
     x0, x1 = sorted((0, dx))
     y0, y1 = sorted((0, dy))
     z0, z1 = sorted((0, dz))
@@ -95,7 +99,7 @@ def _footprint_deltas(dx, dy, dz):
                  for a in range(x0, x1 + 1)
                  for b in range(y0, y1 + 1)
                  for c in range(z0, z1 + 1)
-                 if (a, b, c) != (0, 0, 0))
+                 if (a, b, c) != (dx, dy, dz))
 
 
 class Occupancy:

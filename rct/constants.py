@@ -44,6 +44,13 @@ BANKED_TURN_L3 = 44
 BANKED_TURN_R3 = 45
 
 STATION_PIECES = (BEGIN_STATION, MIDDLE_STATION, END_STATION)
+
+# 브레이크. 기하는 FLAT 과 완전히 같다 (한 칸 전진, 경사/뱅크 변화 없음).
+# **brake_speed 를 안 주면(기본 0) 열차가 거기서 선다** -- 평점이 안 나온다.
+# 40 이상은 배치 자체가 거부된다 (우든 코스터 상한으로 보인다).
+BRAKE = 99
+BLOCK_BRAKE = 216
+BRAKES = frozenset((BRAKE, BLOCK_BRAKE))
 # 체인리프트를 걸 수 있는 조각. UP25_TO_FLAT 이 빠져 있었는데, 리프트 언덕의
 # 마지막 조각(경사 -> 평지 전환)이라 gen/random_walk.py 의 _lift() 가 항상
 # 체인으로 놓는다. 실제로 수집한 33171개 전부에 (UP25_TO_FLAT, chain=True) 가

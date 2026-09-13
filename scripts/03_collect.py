@@ -16,6 +16,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from geom.simulator import Bounds, TrackSimulator
 from gen.random_walk import generate_episode
+from rct import constants as C
 from rct.client import RCTClient
 from rct.env import WoodenCoasterEnv
 
@@ -80,7 +81,11 @@ def sample_config():
     # 뱅크(커빙) 성향. 켜면 좌우G가 내려가 격렬도가 낮은 순한 트랙, 끄면
     # 맨턴 위주로 격렬한 트랙이 나온다. 둘 다 있어야 조건부 생성이 배운다.
     banked = random.random() < 0.5
-    return width, depth, lift, wander, close, banked
+    # 브레이크 속도. 0 이면 열차가 서고 40 이상은 배치가 거부된다.
+    # 격렬도는 최고속도의 계단 함수라 (속도 37 -> 3.44, 38 -> 5.25) 사이가 비는데,
+    # 속도를 중간값으로 깎을 수단이 브레이크뿐이다. 이걸 흔들어 구멍을 노린다.
+    brake_speed = random.randint(8, 35)
+    return width, depth, lift, wander, close, banked, brake_speed
 
 
 os.makedirs(os.path.dirname(args.out), exist_ok=True)
@@ -90,7 +95,8 @@ with RCTClient.discover(ports=ports) as c, open(args.out, "a", encoding="utf-8")
     c.set_game_speed(args.speed)
     env = WoodenCoasterEnv(c, origin=origin)
     for i in range(args.n):
-        width, depth, lift, wander, close, banked = sample_config()
+        width, depth, lift, wander, close, banked, brake_speed = sample_config()
+        env.brake_speed = brake_speed
         bounds = Bounds.plot(origin, DIRECTION, width, depth, args.height)
         seq = generate_episode(env, sim, bounds, max_pieces=250,
                                lift_pieces=lift, wander_steps=wander,
@@ -108,6 +114,8 @@ with RCTClient.discover(ports=ports) as c, open(args.out, "a", encoding="utf-8")
             "bounds": {"width": width, "depth": depth, "height": args.height},
             "lift_pieces": lift,
             "banked": banked,
+            "brake_speed": brake_speed,
+            "n_brake": sum(1 for t, _c in seq if t in C.BRAKES),
             "station": 3,
             # 세대 추적용. gen 은 생성기 커밋, seed+port 는 재현용.
             "meta": {"gen": GEN, "seed": args.seed, "port": args.port,

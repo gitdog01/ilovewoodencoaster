@@ -10,10 +10,15 @@ from .client import RCTClient, RCTError
 
 
 class WoodenCoasterEnv:
-    def __init__(self, client: RCTClient, origin=(67, 66, 14), direction=0):
+    def __init__(self, client: RCTClient, origin=(67, 66, 14), direction=0,
+                 brake_speed=25):
         self.c = client
         self.origin = origin
         self.direction = direction
+        # 브레이크 조각을 놓을 때 쓸 속도. 0 이면 열차가 거기서 서서 평점이
+        # 안 나온다 (실측). 40 이상은 배치가 거부된다. 어휘에 브레이크가 없으면
+        # 이 값은 아무 데도 안 쓰인다.
+        self.brake_speed = brake_speed
         self.ride_object = self._find_wooden_object()
         self.ride_id = None
 
@@ -84,7 +89,9 @@ class WoodenCoasterEnv:
         """조각 하나 배치. (성공여부, 다음위치, 폐곡선여부)"""
         p = self.c.place(self.ride_id, C.RIDE_TYPE_WOODEN, self.pos["x"],
                          self.pos["y"], self.pos["z"], self.pos["direction"],
-                         track_type, chain=chain)
+                         track_type, chain=chain,
+                         brake_speed=(self.brake_speed
+                                      if track_type in C.BRAKES else 0))
         if p is None:
             return False, self.pos, False
         self.pos = p["nextEndpoint"]

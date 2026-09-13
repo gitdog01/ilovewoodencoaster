@@ -49,10 +49,15 @@ GENERATIONS = {
     "run2_":  ("gen3", "66939a4", "설계 시간상한 추가"),
     "run3_":  ("gen3", "346330f", "meta.gen 기록 시작. 분포는 gen3 와 동일"),
     "run4_":  ("gen4", "", "스테이션 플랫폼 타일을 점유로 반영 (배치 성공률 개선)"),
+    # gen5 (2026-09-13): 배치 거부 17% -> 4% (실측 footprint + 입구/출구 예약 +
+    # plan_safe) 하고 **브레이크를 어휘에 넣었다.** 레코드에 brake_speed 와
+    # n_brake 가 새로 들어간다. 격렬도 구멍(4.0~5.0, 10.5~13.5)이 메워지는지가
+    # 이 세대의 목적이다.
+    "run5_":  ("gen5", "", "실측 footprint + plan_safe + 브레이크 어휘 추가"),
 }
 # 커밋 -> 세대. 레코드에 meta.gen 이 있을 때 세대를 붙이는 데 쓴다.
 COMMIT_TO_GEN = {c: g for g, c, _ in GENERATIONS.values() if c}
-GEN_ORDER = ["gen1", "gen2", "gen3", "gen4"]
+GEN_ORDER = ["gen1", "gen2", "gen3", "gen4", "gen5"]
 
 
 def generation_of(record, filename):
