@@ -148,8 +148,10 @@ python scripts/check_buckets.py    # 조건 토큰이 실제로 조건 노릇을
 - 데이터 통계 **32/32 전부 일치** — 개수, 지표 min/중앙/max, 조각 수, 격렬도 10
   초과 비율, gen4 banked 표, 시퀀스 p95. `scripts/check_buckets.py` 와
   `build_dataset.py` 로 아무 때나 다시 볼 수 있다.
-- `geometry.json` 652개 조합, 생성기 어휘 21종, `Occupancy` 기본 ztol 2 (±2 동작),
-  `_footprint_deltas` 가 진입 타일 (0,0,0) 을 뺀다 — 전부 확인.
+- `geometry.json` 652개 조합, 생성기 어휘 21종, `Occupancy` 기본 ztol 2 (±2 동작)
+  — 확인. (`_footprint_deltas` 가 진입 타일을 뺀다는 것도 코드대로였지만,
+  **그게 옳다는 문서의 설명이 틀렸다**는 게 다음 날 밝혀졌다. 위 "배치 거부를
+  잡은 과정" 원인 2 참고.)
 - **5칸 턴 = 11타일**도 정확하다 (실제 변위 (-2,3,0) -> 바운딩 박스 11칸).
 - **설계 결정 4 가 실증된다.** `constrain.py` 헤더의 베이스라인 숫자를 그대로
   재현했다 (후보 64개, 마스킹 없이):
