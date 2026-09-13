@@ -94,28 +94,33 @@ function main() {
 
             let y = 20;
             const widgets = [];
+            // 스피너는 정수만 다룬다. 좌우G 는 소수라 10배로 들고 있되,
+            // **보여줄 때는 나눠서 보여준다** (예전에는 "좌우G x10 / 25" 라고
+            // 떠서 유저가 25배중력으로 읽었다).
             const rows = [
-                ["exc",   "흥미도 목표",   0, 10],
-                ["int",   "격렬도 목표",   0, 15],
-                ["nau",   "멀미도 목표",   0, 10],
-                ["latg",  "좌우G x10",     5, 40],
-                ["width", "부지 가로",    12, 40],
-                ["depth", "부지 세로",    12, 40],
-                ["n",     "후보 수",       4, 48],
+                ["exc",   "흥미도 목표",   0, 10,  1],
+                ["int",   "격렬도 목표",   0, 15,  1],
+                ["nau",   "멀미도 목표",   0, 10,  1],
+                ["latg",  "좌우G 목표",    5, 40, 10],
+                ["width", "부지 가로",    12, 40,  1],
+                ["depth", "부지 세로",    12, 40,  1],
+                ["n",     "후보 수",       4, 48,  1],
             ];
-            for (const [key, label, lo, hi] of rows) {
+            const fmt = (key, div) =>
+                div === 1 ? String(vals[key]) : (vals[key] / div).toFixed(1);
+            for (const [key, label, lo, hi, div] of rows) {
                 widgets.push({ type: "label", x: 10, y: y + 2, width: 90,
                                height: 14, text: label });
                 widgets.push({
                     type: "spinner", name: "sp_" + key, x: 105, y: y,
-                    width: 80, height: 14, text: String(vals[key]),
+                    width: 80, height: 14, text: fmt(key, div),
                     onIncrement: () => {
                         vals[key] = Math.min(hi, vals[key] + 1);
-                        ui.getWindow(WINDOW_ID).findWidget("sp_" + key).text = String(vals[key]);
+                        ui.getWindow(WINDOW_ID).findWidget("sp_" + key).text = fmt(key, div);
                     },
                     onDecrement: () => {
                         vals[key] = Math.max(lo, vals[key] - 1);
-                        ui.getWindow(WINDOW_ID).findWidget("sp_" + key).text = String(vals[key]);
+                        ui.getWindow(WINDOW_ID).findWidget("sp_" + key).text = fmt(key, div);
                     },
                 });
                 y += 18;
@@ -232,6 +237,7 @@ function main() {
         ["deleteRide",           params => handleDeleteRide(params)],
         ["getRideTiles",         params => handleGetRideTiles(params)],
         ["getTileElements",      params => handleGetTileElements(params)],
+        ["findFreePlot",         params => handleFindFreePlot(params)],
         ["startRideTest",        params => handleStartRideTest(params)],
         ["getRideStats",         params => handleGetRideStats(params)],
         ["getRideMeasurements",  params => handleGetRideMeasurements(params)],
@@ -905,6 +911,101 @@ function main() {
     // 파이썬 예측과 대조한다.
     //
     // baseZ/clearanceZ 는 raw 단위다 (8 = tileCoordinateZ 1칸).
+    // width x depth 의 **빈 평지**를 찾아 스테이션 origin 후보를 돌려준다.
+    //
+    // 왜 게임 안에서 하나: 타일 하나씩 TCP 로 물어보면 28x24 부지 하나에 672회
+    // 왕복이다. 여기서는 map 에 직접 닿으므로 누적합 표로 O(1) 에 사각형을 본다.
+    //
+    // 생성기 origin 이 (67,66) 에 못 박혀 있어서 요청할 때마다 같은 자리에
+    // 짓고, 완성품을 남기면 다음 요청이 스테이션을 못 깔았다. 이걸 푼다.
+    async function handleFindFreePlot(params) {
+        const p = params || {};
+        const width = Math.max(1, p.width | 0);
+        const depth = Math.max(1, p.depth | 0);
+        const direction = (p.direction | 0) & 3;
+        const front = (typeof p.front === "number") ? p.front : 3;
+        const near = p.near || null;
+
+        const W = map.size.x, H = map.size.y;
+        // 1) 타일별 "지을 수 있는 평지인가" + 지면 높이
+        //    ok = 지형이 평평하고(slope 0), 물이 없고, 지표 위에 아무것도 없음
+        const ok = new Uint8Array(W * H);
+        const gz = new Int16Array(W * H);
+        for (let x = 0; x < W; x++) {
+            for (let y = 0; y < H; y++) {
+                const tile = map.getTile(x, y);
+                if (!tile) continue;
+                let good = false, base = 0, blocked = false;
+                for (let i = 0; i < tile.numElements; i++) {
+                    const e = tile.elements[i];
+                    if (e.type === "surface") {
+                        if (e.slope === 0 && !e.waterHeight) { good = true; base = e.baseZ; }
+                    } else {
+                        blocked = true;      // 트랙/풍경/길/입구 등 뭐든 있으면 제외
+                    }
+                }
+                const i2 = x * H + y;
+                ok[i2] = (good && !blocked) ? 1 : 0;
+                gz[i2] = base;
+            }
+        }
+        // 2) 누적합 (같은 높이까지 요구하면 표가 하나 더 필요하니, 높이는
+        //    후보 사각형에서 직접 확인한다 -- 후보 수가 많지 않다)
+        const sum = new Int32Array((W + 1) * (H + 1));
+        for (let x = 0; x < W; x++)
+            for (let y = 0; y < H; y++)
+                sum[(x + 1) * (H + 1) + (y + 1)] =
+                    ok[x * H + y] + sum[x * (H + 1) + (y + 1)]
+                    + sum[(x + 1) * (H + 1) + y] - sum[x * (H + 1) + y];
+        const rect = (x0, y0, x1, y1) =>
+            sum[(x1 + 1) * (H + 1) + (y1 + 1)] - sum[x0 * (H + 1) + (y1 + 1)]
+            - sum[(x1 + 1) * (H + 1) + y0] + sum[x0 * (H + 1) + y0];
+
+        // 3) origin 후보를 훑는다. 부지 사각형은 geom/simulator.py 의
+        //    Bounds.plot() 과 같은 규칙으로 잡는다.
+        function plotOf(ox, oy) {
+            let x0, x1, y0, y1;
+            if (direction === 0 || direction === 2) {
+                const sx = direction === 0 ? -1 : 1;
+                x0 = Math.min(ox - sx * front, ox + sx * width);
+                x1 = Math.max(ox - sx * front, ox + sx * width);
+                y0 = oy - (depth >> 1); y1 = oy + (depth >> 1);
+            } else {
+                const sy = direction === 1 ? 1 : -1;
+                y0 = Math.min(oy - sy * front, oy + sy * width);
+                y1 = Math.max(oy - sy * front, oy + sy * width);
+                x0 = ox - (depth >> 1); x1 = ox + (depth >> 1);
+            }
+            return [x0, y0, x1, y1];
+        }
+
+        const cx = near ? (near.x | 0) : (W >> 1);
+        const cy = near ? (near.y | 0) : (H >> 1);
+        let best = null, bestD = Infinity;
+        for (let ox = 1; ox < W - 1; ox++) {
+            for (let oy = 1; oy < H - 1; oy++) {
+                const [x0, y0, x1, y1] = plotOf(ox, oy);
+                if (x0 < 1 || y0 < 1 || x1 >= W - 1 || y1 >= H - 1) continue;
+                const area = (x1 - x0 + 1) * (y1 - y0 + 1);
+                if (rect(x0, y0, x1, y1) !== area) continue;   // 빈 평지가 아님
+                const d = (ox - cx) * (ox - cx) + (oy - cy) * (oy - cy);
+                if (d >= bestD) continue;
+                // 높이가 전부 같은지 확인 (누적합은 평탄 여부만 본다)
+                const z0 = gz[x0 * H + y0];
+                let flat = true;
+                for (let x = x0; x <= x1 && flat; x++)
+                    for (let y = y0; y <= y1; y++)
+                        if (gz[x * H + y] !== z0) { flat = false; break; }
+                if (!flat) continue;
+                best = { x: ox, y: oy, z: z0 / 8, baseZ: z0,
+                         plot: { x0: x0, y0: y0, x1: x1, y1: y1 } };
+                bestD = d;
+            }
+        }
+        if (!best) return { found: false, reason: "빈 평지가 없습니다" };
+        return Object.assign({ found: true, direction: direction }, best);
+    }
+
     // 타일 하나의 모든 엘리먼트를 내려준다 (지형/트랙/지지대/풍경 전부).
     //
     // 배치 거부의 원인을 특정하려고 넣었다. 파이썬은 자기 트랙만 알기 때문에

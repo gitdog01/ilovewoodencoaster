@@ -38,7 +38,7 @@ DIRECTION = 0
 
 
 def handle(req, model, tok, sim, env, client, device, cap, idle_speed=1,
-           keep=False):
+           keep=True):
     """요청 하나를 처리한다. 진행 상황은 게임 UI 에 되돌려 보여준다."""
     def status(msg):
         print(f"  {msg}")
@@ -78,9 +78,21 @@ def _handle(req, model, tok, sim, env, client, device, cap, status, keep):
     if notes:
         status("; ".join(notes))
 
-    bounds = Bounds.plot(ORIGIN, DIRECTION, width, depth, 60)
-    start, goal, tiles = station_states(sim, ORIGIN, DIRECTION, 3)
+    # 지을 자리를 매번 새로 찾는다. 예전에는 ORIGIN 이 (67,66) 에 못 박혀 있어서
+    # 요청할 때마다 같은 자리에 짓고, 완성품을 남기면 다음 요청이 스테이션을
+    # 못 깔았다. 게임이 빈 평지를 찾아준다 (findFreePlot, 0.13초).
+    plot = client.find_free_plot(width, depth, DIRECTION, near=ORIGIN[:2])
+    if plot and plot.get("found"):
+        origin = (plot["x"], plot["y"], plot["z"])
+    else:
+        origin = ORIGIN
+        status("빈 평지를 못 찾아 기본 위치를 씁니다")
+    env.origin = origin
+
+    bounds = Bounds.plot(origin, DIRECTION, width, depth, 60)
+    start, goal, tiles = station_states(sim, origin, DIRECTION, 3)
     cond = dict(target, width=width, depth=depth, height=60, station=3)
+    status(f"자리 ({origin[0]},{origin[1]}) 확보")
 
     status(f"후보 {n}개 생성 중...")
     seqs = generate_closed(model, tok, cond, sim, bounds, start, goal, n,
@@ -102,16 +114,12 @@ def _handle(req, model, tok, sim, env, client, device, cap, status, keep):
     env.reset(station_length=3, clear="own")
     env.build(seq)
     if keep:
-        # 완성품을 유저 것으로 넘긴다. 단, ORIGIN 이 고정이라 그 자리가 계속
-        # 막히므로 **다음 요청은 스테이션을 못 깐다.** 유저가 직접 치우거나
-        # 자리를 옮기기 전까지는 한 번만 되는 모드다 (좌표 선택은 TODO).
+        # 완성품을 유저 것으로 넘긴다. 다음 요청은 빈 평지를 새로 찾으므로
+        # 이 자리가 막혀도 상관없다.
         env.release()
     status(f"완료: E {stats['excitement']:.2f} / I {stats['intensity']:.2f} "
            f"/ latg {stats['maxLateralGs']:.2f} ({built}개 중 선택)")
     print(f"  -> 조각 {len(seq)}개, 최고속도 {stats['maxSpeed']}")
-    if keep:
-        print("  (--keep: 이 트랙을 남겨둡니다. 다음 요청은 같은 자리에 못 지으니 "
-              "먼저 치우세요.)")
     return True
 
 
@@ -124,11 +132,11 @@ def main():
     ap.add_argument("--once", action="store_true", help="요청 하나만 처리하고 종료")
     ap.add_argument("--idle-speed", type=int, default=1,
                     help="요청 처리가 끝난 뒤 되돌릴 게임 속도")
-    ap.add_argument("--keep", action="store_true",
-                    help="완성된 트랙을 남긴다. 기본은 다음 요청 때 자기 트랙을 "
-                         "갈아끼우는 것 -- ORIGIN 이 고정이라 남기면 그 자리가 "
-                         "막혀서 다음 요청이 실패한다. 유저가 지은 다른 라이드는 "
-                         "어느 쪽이든 건드리지 않는다.")
+    ap.add_argument("--replace", action="store_true",
+                    help="완성된 트랙을 다음 요청 때 갈아끼운다. 기본은 남기는 "
+                         "것이다 -- 요청마다 빈 평지를 새로 찾으므로 쌓여도 "
+                         "자리가 안 막힌다. 유저가 지은 다른 라이드는 어느 "
+                         "쪽이든 건드리지 않는다.")
     args = ap.parse_args()
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -178,7 +186,7 @@ def main():
                 client.call("clearGenerationRequest", strict=False)
                 try:
                     handle(req, model, tok, sim, env, client, device,
-                           args.cap, args.idle_speed, args.keep)
+                           args.cap, args.idle_speed, keep=not args.replace)
                 except Exception as e:
                     # 요청 하나가 죽어도 데몬은 살아있어야 한다.
                     msg = f"오류: {type(e).__name__}: {e}"

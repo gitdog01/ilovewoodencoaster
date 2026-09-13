@@ -103,6 +103,18 @@ class RCTClient:
         """
         return self.call("getRideTiles", {"rideId": ride_id})
 
+    def find_free_plot(self, width, depth, direction=0, front=3, near=None):
+        """width x depth 의 빈 평지를 찾아 스테이션 origin 을 돌려준다.
+
+        생성기 origin 이 고정이라 요청할 때마다 같은 자리에 짓던 것을 푼다.
+        타일을 하나씩 물어보면 부지 하나에 수백 번 왕복이라 게임 안에서 찾는다.
+        """
+        p = {"width": width, "depth": depth, "direction": direction,
+             "front": front}
+        if near:
+            p["near"] = {"x": near[0], "y": near[1]}
+        return self.call("findFreePlot", p, strict=False)
+
     def tile_elements(self, x, y):
         """타일 하나의 모든 엘리먼트 (지형/트랙/지지대/풍경).
 
