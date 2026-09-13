@@ -29,7 +29,7 @@ class BoundsConstraint:
 
     def __init__(self, sim, tok, bounds, start: State, goal: State,
                  n_rows, ztol=2, allow_eos_only_when_closed=False,
-                 reserve=None, seed_cells=None):
+                 reserve=None, seed_cells=None, max_token=None):
         self.P = planner_for(sim)
         self.tok = tok
         self.bounds = bounds
@@ -49,6 +49,8 @@ class BoundsConstraint:
         for tid, t in self.piece_of.items():
             self.tokens_of.setdefault(t, []).append(tid)
 
+        # 모델의 출력 폭. 어휘가 늘기 전 체크포인트를 돌릴 때 필요하다.
+        self.max_token = max_token
         self.state = [start] * n_rows
         seed = list(seed_cells) if seed_cells else [start.cell(), goal.cell()]
         self.occ = [Occupancy(ztol, list(seed)) for _ in range(n_rows)]
@@ -98,4 +100,9 @@ class BoundsConstraint:
         closed = s.key() == self.goal.key()
         if not self.only_closed or closed:
             allowed.append(self.eos)
+        if self.max_token is not None:
+            # 어휘가 늘기 전에 학습한 체크포인트는 출력 폭이 좁다. 걸러내지 않으면
+            # 마스크 인덱스가 범위를 벗어나 **CUDA device-side assert** 로 죽는다
+            # (브레이크를 어휘에 넣고 옛 ckpt 를 돌렸다가 당했다).
+            allowed = [t for t in allowed if t < self.max_token]
         return allowed

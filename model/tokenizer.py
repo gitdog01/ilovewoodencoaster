@@ -11,9 +11,19 @@ from rct import constants as C
 
 SPECIAL = ["<pad>", "<bos>", "<eos>", "<sep>"]
 
-# (조각, 체인리프트) 쌍이 하나의 토큰
-TRACK_TOKENS = [(t, False) for t in C.BUILDABLE] + \
-               [(t, True) for t in C.CHAINABLE]
+# (조각, 체인리프트) 쌍이 하나의 토큰.
+#
+# **토큰 ID 순서는 절대 건드리지 말 것. 새 조각은 맨 뒤에만 붙인다.**
+# C.BUILDABLE 은 조각 번호 정렬이라, 번호가 중간인 조각을 NAMES 에 추가하면
+# 그 뒤의 ID 가 전부 밀린다. 실제로 브레이크(99)를 넣었더니 체인 토큰이 1씩
+# 밀려서 **기존 체크포인트가 리프트 조각을 통째로 잘못 읽게 됐다.**
+# 그래서 v1 어휘(비체인 27종 + 체인 4종)의 자리를 고정하고 새 조각은 뒤에 붙인다.
+_V1 = (0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+       22, 23, 32, 33, 42, 43, 44, 45)
+_NEW = tuple(t for t in C.BUILDABLE if t not in _V1)
+TRACK_TOKENS = ([(t, False) for t in _V1]
+                + [(t, True) for t in C.CHAINABLE]
+                + [(t, False) for t in _NEW])
 
 # 조건 버킷. **실제 수집 분포(gen2+ 33171개)에 맞춰 잘랐다.**
 #

@@ -80,8 +80,11 @@ def generate_closed(model, tok, cond, sim, bounds, start: State, goal: State,
     x = torch.tensor([prefix] * n, dtype=torch.long, device=device)
 
     seed = list(station_tiles) or [start.cell(), goal.cell()]
+    # max_token: 모델이 낼 수 있는 토큰 폭. 어휘가 늘기 전에 학습한 체크포인트를
+    # 돌리면 새 토큰이 마스크 인덱스 범위를 넘어 CUDA assert 로 죽는다.
     con = BoundsConstraint(sim, tok, bounds, start, goal, n, ztol=ztol,
-                           reserve=close_budget, seed_cells=seed)
+                           reserve=close_budget, seed_cells=seed,
+                           max_token=model.cfg.vocab_size)
     out = model.generate(x, max_new_tokens=max_new_tokens,
                          temperature=temperature, top_k=top_k,
                          eos_id=tok.stoi["<eos>"], allowed_fn=con)
