@@ -72,6 +72,10 @@ NAMES = {
     LEFT_BANK: "LeftBank", RIGHT_BANK: "RightBank",
     BANKED_TURN_L5: "BankedLeftQuarterTurn5", BANKED_TURN_R5: "BankedRightQuarterTurn5",
     BANKED_TURN_L3: "LeftBankedQuarterTurn3", BANKED_TURN_R3: "RightBankedQuarterTurn3",
+    # 브레이크 (gen5 부터). **NAMES 에 넣어야 BUILDABLE -> TRACK_TOKENS 에 들어가고
+    # 토크나이저가 인코딩할 수 있다.** 어휘(WEIGHTS)에만 넣고 여기를 빠뜨렸더니
+    # gen5 시퀀스에서 TRACK_TOKENS.index() 가 ValueError 로 죽었다.
+    BRAKE: "Brake",
 }
 
 # 생성 모델이 다루는 조각 집합 (스테이션은 프리픽스로 따로 처리)

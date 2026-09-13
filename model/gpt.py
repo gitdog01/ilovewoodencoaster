@@ -1,6 +1,6 @@
 """트랙 생성용 작은 GPT (4단계).
 
-nanoGPT 급이다. 어휘가 84개, 시퀀스가 최대 128 토큰이라 LLM 스케일이 전혀
+nanoGPT 급이다. 어휘가 85개, 시퀀스가 최대 128 토큰이라 LLM 스케일이 전혀
 아니다 -- 기본 설정이 약 4.7M 파라미터로, 데이터(약 2M 토큰)에 비하면 오히려
 넉넉한 편이라 과적합을 봐야 한다. 학습 스크립트가 train/val 손실을 같이 찍는다.
 """
@@ -15,7 +15,7 @@ from torch.nn import functional as F
 
 @dataclass
 class GPTConfig:
-    vocab_size: int = 84       # len(TrackTokenizer()). 학습/추론은 실측값으로 덮어쓴다
+    vocab_size: int = 85       # len(TrackTokenizer()). 학습/추론은 실측값으로 덮어쓴다
     block_size: int = 128
     n_layer: int = 6
     n_head: int = 8
