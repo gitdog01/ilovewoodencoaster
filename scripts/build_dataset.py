@@ -54,10 +54,14 @@ GENERATIONS = {
     # n_brake 가 새로 들어간다. 격렬도 구멍(4.0~5.0, 10.5~13.5)이 메워지는지가
     # 이 세대의 목적이다.
     "run5_":  ("gen5", "", "실측 footprint + plan_safe + 브레이크 어휘 추가"),
+    # gen6 (2026-09-19): 우든 코스터 요건을 설계 단계에서 보장. 리프트 6 이상,
+    # 첫 낙하 뒤 낙타등 언덕 1~3개, 요건 예측(gen/requirements.py) 미달은 폐기.
+    # 그전 세대는 75% 가 요건 미달이라 평점이 반토막이었다.
+    "run6_":  ("gen6", "", "우든 요건 보장 + 낙타등 언덕"),
 }
 # 커밋 -> 세대. 레코드에 meta.gen 이 있을 때 세대를 붙이는 데 쓴다.
 COMMIT_TO_GEN = {c: g for g, c, _ in GENERATIONS.values() if c}
-GEN_ORDER = ["gen1", "gen2", "gen3", "gen4", "gen5"]
+GEN_ORDER = ["gen1", "gen2", "gen3", "gen4", "gen5", "gen6"]
 
 
 def generation_of(record, filename):

@@ -79,9 +79,22 @@ def main():
     ap.add_argument("--data", default=os.path.join(REPO, "data", "dataset.jsonl"))
     ap.add_argument("--tracks", default=None)
     ap.add_argument("--cap", type=float, default=10.0, help="격렬도 상한")
+    ap.add_argument("--check-predictor", action="store_true",
+                    help="gen/requirements.py 예측이 실제 요건 판정과 맞는지 본다")
     args = ap.parse_args()
 
     rows = [json.loads(l) for l in open(args.data, encoding="utf-8") if l.strip()]
+    if args.check_predictor:
+        from gen.requirements import meets as pred_meets
+        tab = {}
+        for r in rows:
+            k = (pred_meets([tuple(p) for p in r["sequence"]]), meets(r["stats"]))
+            tab[k] = tab.get(k, 0) + 1
+        tp, fp_, fn = tab.get((True, True), 0), tab.get((True, False), 0), tab.get((False, True), 0)
+        print(f"== 요건 예측기 ({len(rows):,}개)")
+        print(f"  정밀도 {tp / max(1, tp + fp_):.1%} (통과 예측 중 실제 충족)")
+        print(f"  재현율 {tp / max(1, tp + fn):.1%} (실제 충족 중 통과 예측)")
+        return
     flat = [dict(r["stats"], width=r["bounds"]["width"], depth=r["bounds"]["depth"])
             for r in rows]
 

@@ -75,7 +75,10 @@ def sample_config():
     # 10을 한 번도 안 넘었다 -- 정작 목표가 "격렬도 10 제한 하 흥미도 최대화"인데
     # 제약이 걸린 사례가 데이터에 없으면 모델이 그 경계를 배울 수가 없다.
     # 그래서 5번에 1번은 10~13을 뽑아 격렬도 상단(10~15)도 데이터에 넣는다.
-    lift = random.randint(10, 13) if random.random() < 0.2 else random.randint(3, 9)
+    #
+    # 하한 6 (gen6, 2026-09-19): 리프트 3~5 는 최고 낙하가 12 에 못 미쳐 우든
+    # 코스터 요건에 **전부** 걸린다 (평점 반토막). 데이터로 쓸 가치가 없다.
+    lift = random.randint(10, 13) if random.random() < 0.2 else random.randint(6, 9)
     wander = random.randint(10, min(60, width + depth))
     close = max(20, (width + depth) // 2 + 8)
     # 뱅크(커빙) 성향. 켜면 좌우G가 내려가 격렬도가 낮은 순한 트랙, 끄면
@@ -89,7 +92,9 @@ def sample_config():
     # 그래도 흔드는 건 남겨둔다 -- 브레이크 자체는 스톡이 2.9% 쓰는 조각이고,
     # 어휘를 넓힐 때 분포에 있어야 모델이 쓸 줄 안다.
     brake_speed = random.randint(8, 35)
-    return width, depth, lift, wander, close, banked, brake_speed
+    # 첫 낙하 뒤 낙타등 언덕 수 (gen6). 낙하 수와 음의 G 요건을 직접 채운다.
+    hills = random.randint(1, 3)
+    return width, depth, lift, wander, close, banked, brake_speed, hills
 
 
 os.makedirs(os.path.dirname(args.out), exist_ok=True)
@@ -99,12 +104,13 @@ with RCTClient.discover(ports=ports) as c, open(args.out, "a", encoding="utf-8")
     c.set_game_speed(args.speed)
     env = WoodenCoasterEnv(c, origin=origin)
     for i in range(args.n):
-        width, depth, lift, wander, close, banked, brake_speed = sample_config()
+        width, depth, lift, wander, close, banked, brake_speed, hills = sample_config()
         env.brake_speed = brake_speed
         bounds = Bounds.plot(origin, DIRECTION, width, depth, args.height)
         seq = generate_episode(env, sim, bounds, max_pieces=250,
                                lift_pieces=lift, wander_steps=wander,
-                               close_budget=close, banked=banked)
+                               close_budget=close, banked=banked,
+                               hills=hills, require=True)
         if seq is None:
             print(f"[{i+1}/{args.n}] 폐곡선 실패 (w={width} d={depth} lift={lift})")
             continue
@@ -119,6 +125,7 @@ with RCTClient.discover(ports=ports) as c, open(args.out, "a", encoding="utf-8")
             "lift_pieces": lift,
             "banked": banked,
             "brake_speed": brake_speed,
+            "hills": hills,
             "n_brake": sum(1 for t, _c in seq if t in C.BRAKES),
             "station": 3,
             # 세대 추적용. gen 은 생성기 커밋, seed+port 는 재현용.
