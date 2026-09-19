@@ -92,9 +92,13 @@ def sample_config():
     # 그래도 흔드는 건 남겨둔다 -- 브레이크 자체는 스톡이 2.9% 쓰는 조각이고,
     # 어휘를 넓힐 때 분포에 있어야 모델이 쓸 줄 안다.
     brake_speed = random.randint(8, 35)
-    # 첫 낙하 뒤 낙타등 언덕 수 (gen6). 낙하 수와 음의 G 요건을 직접 채운다.
-    hills = random.randint(1, 3)
-    return width, depth, lift, wander, close, banked, brake_speed, hills
+    # 낙타등 언덕 수와 간격 (gen7). 낙하 수와 음의 G 요건을 직접 채우고,
+    # 언덕을 본체 전체에 흩어 사람 코스터의 "언덕 여러 개" 골격에 가깝게 한다.
+    # 오프라인 스윕: 5~9 x 간격 6 에서 낙하 중앙 3 -> 6, 길이 424 -> 493.
+    # 더 늘려도(8~14, 12~20) 안 늘어난다 -- 부지 공간이 한계다.
+    hills = random.randint(4, 9)
+    hill_spread = 6
+    return width, depth, lift, wander, close, banked, brake_speed, hills, hill_spread
 
 
 os.makedirs(os.path.dirname(args.out), exist_ok=True)
@@ -104,13 +108,15 @@ with RCTClient.discover(ports=ports) as c, open(args.out, "a", encoding="utf-8")
     c.set_game_speed(args.speed)
     env = WoodenCoasterEnv(c, origin=origin)
     for i in range(args.n):
-        width, depth, lift, wander, close, banked, brake_speed, hills = sample_config()
+        (width, depth, lift, wander, close, banked, brake_speed,
+         hills, hill_spread) = sample_config()
         env.brake_speed = brake_speed
         bounds = Bounds.plot(origin, DIRECTION, width, depth, args.height)
         seq = generate_episode(env, sim, bounds, max_pieces=250,
                                lift_pieces=lift, wander_steps=wander,
                                close_budget=close, banked=banked,
-                               hills=hills, require=True)
+                               hills=hills, hill_spread=hill_spread,
+                               require=True)
         if seq is None:
             print(f"[{i+1}/{args.n}] 폐곡선 실패 (w={width} d={depth} lift={lift})")
             continue
@@ -125,7 +131,7 @@ with RCTClient.discover(ports=ports) as c, open(args.out, "a", encoding="utf-8")
             "lift_pieces": lift,
             "banked": banked,
             "brake_speed": brake_speed,
-            "hills": hills,
+            "hills": hills, "hill_spread": hill_spread,
             "n_brake": sum(1 for t, _c in seq if t in C.BRAKES),
             "station": 3,
             # 세대 추적용. gen 은 생성기 커밋, seed+port 는 재현용.

@@ -58,10 +58,13 @@ GENERATIONS = {
     # 첫 낙하 뒤 낙타등 언덕 1~3개, 요건 예측(gen/requirements.py) 미달은 폐기.
     # 그전 세대는 75% 가 요건 미달이라 평점이 반토막이었다.
     "run6_":  ("gen6", "", "우든 요건 보장 + 낙타등 언덕"),
+    # gen7 (2026-09-20): 언덕을 4~9개로 늘리고 본체 전체에 흩었다 (hill_spread).
+    # 낙하 수 중앙 3 -> 6 (사람은 9).
+    "run7_":  ("gen7", "", "언덕을 본체까지 흩뿌림"),
 }
 # 커밋 -> 세대. 레코드에 meta.gen 이 있을 때 세대를 붙이는 데 쓴다.
 COMMIT_TO_GEN = {c: g for g, c, _ in GENERATIONS.values() if c}
-GEN_ORDER = ["gen1", "gen2", "gen3", "gen4", "gen5", "gen6"]
+GEN_ORDER = ["gen1", "gen2", "gen3", "gen4", "gen5", "gen6", "gen7"]
 
 
 def generation_of(record, filename):

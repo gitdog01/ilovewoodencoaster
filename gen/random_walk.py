@@ -98,23 +98,34 @@ def _hill(k, flat=0):
             + [C.FLAT_TO_DOWN25] + [C.DOWN25] * k + [C.DOWN25_TO_FLAT])
 
 
-def _add_hills(P, s, n_hills, top_z, bounds, occupied, weights):
+def _add_hills(P, s, n_hills, top_z, bounds, occupied, weights, goal,
+               reserve, spread=0):
     """s 에서 언덕을 최대 n_hills 개 붙인다. (조각열, 끝상태, 점유) 를 돌려준다.
 
     언덕 꼭대기는 리프트 꼭대기보다 CREST_DEPTH 이상 낮아야 속도가 남아서
     음의 G 가 난다 (실측 깊이 8 -> 97.5%). 그 안에서 제일 높은 언덕부터 시도하고,
     일직선으로 안 들어가면 짧게 무작위로 방향을 틀어보고 다시 시도한다.
     하나도 못 붙여도 실패는 아니다 -- 마지막 요건 검사가 거른다.
+
+    spread: 언덕 사이에 끼워 넣을 무작위 워크 길이의 상한. 0 이면 언덕이
+    첫 낙하 뒤에 연달아 붙고, 크면 본체 전체에 흩어진다. 사람이 만든 코스터는
+    낙하가 중앙 9회인데 gen6 는 3회였다 -- 언덕을 본체까지 퍼뜨리는 손잡이다.
+
+    goal/reserve: 사이 워크가 스테이션에서 너무 멀어지지 않게 한다. 언덕 하나가
+    2k+4 조각이라, 이걸 안 걸면 A* 가 닫을 여지를 언덕이 먹어버린다.
     """
     from gen.requirements import CREST_DEPTH
     seq, occ = [], occupied.copy()
-    for _ in range(n_hills):
+    for i in range(n_hills):
         placed = False
         for _try in range(4):
+            steps = random.randint(1, spread) if (spread and (i or _try)) else 0
+            if _try and not steps:
+                steps = random.randint(1, 4)
             lead = []
-            if _try:
-                lead, _s, _o = P.wander(s, s, bounds, occ, random.randint(1, 4),
-                                        weights, reserve=10 ** 9)
+            if steps:
+                lead, _s, _o = P.wander(s, goal, bounds, occ, steps, weights,
+                                        reserve=reserve)
             s0, cells0 = _follow(P, s, lead, bounds, occ) if lead else (s, [])
             if s0 is None:
                 continue
@@ -128,7 +139,8 @@ def _add_hills(P, s, n_hills, top_z, bounds, occupied, weights):
                     continue
                 occ1 = occ0.copy()
                 occ1.add(cells)
-                if _exits(P, s1, bounds, occ1) < 2:
+                # 언덕을 붙인 뒤에도 닫을 여지가 남아야 한다.
+                if _exits(P, s1, bounds, occ1) < 2 or P.h(s1, goal) > reserve:
                     continue
                 seq += lead + hill
                 s, occ = s1, occ1
@@ -174,7 +186,7 @@ def plan_episode(sim: TrackSimulator, station_end: State, goal: State,
                  bounds: Bounds, lift_pieces=None, wander_steps=None,
                  close_budget=24, headroom=2, ztol=2, banked=True,
                  attempts=40, strict_banked=True, time_budget=20.0,
-                 station_cells=(), hills=0, require=False):
+                 station_cells=(), hills=0, hill_spread=0, require=False):
     """게임 없이 폐곡선 시퀀스 하나를 설계한다. [(조각, 체인), ...] 또는 None.
 
     goal 은 스테이션 첫 조각의 진입점 -- 여기로 정확히 돌아오면 폐곡선이다.
@@ -194,7 +206,8 @@ def plan_episode(sim: TrackSimulator, station_end: State, goal: State,
     설계 시간의 81%가 실패하는 A* 호출에 들어가므로, 안 되는 판은 빨리 접고
     다른 설정으로 새로 뽑는 게 훨씬 싸다.
 
-    hills: 첫 낙하 직후에 붙일 낙타등 언덕 수 (`_add_hills`).
+    hills: 붙일 낙타등 언덕 수, hill_spread: 언덕 사이 워크 길이 상한
+    (`_add_hills`). spread 가 0 이면 첫 낙하 뒤에 몰리고, 크면 본체에 흩어진다.
     require: True 면 우든 코스터 요건(gen/requirements.py)을 못 채울 것으로
     예측되는 설계를 버리고 다시 뽑는다. 요건 미달 트랙은 게임이 평점을 절반으로
     깎는다 -- 2026-09-19 까지 데이터의 75% 가 그랬다.
@@ -249,7 +262,8 @@ def plan_episode(sim: TrackSimulator, station_end: State, goal: State,
         # 3.5) 낙타등 언덕. 낙하 수와 음의 G 요건을 우연에 맡기지 않는다.
         hill_seq = []
         if hills:
-            hill_seq, s, occ0 = _add_hills(P, s, hills, top.z, rb, occ0, weights)
+            hill_seq, s, occ0 = _add_hills(P, s, hills, top.z, rb, occ0, weights,
+                                           goal, close_budget, spread=hill_spread)
         drop = drop + hill_seq
 
         # 4) 무작위 워크로 본체 모양을 만든다.
