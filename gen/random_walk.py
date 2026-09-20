@@ -52,6 +52,11 @@ WEIGHTS = {
 # 뱅크턴은 진입+턴+해제로 3조각이라 최단 경로를 찾는 A* 는 항상 맨턴을 고른다.
 # 조각별 비용을 매겨봤더니 균일 비용일 때 잘 먹던 가지치기가 풀려 탐색이
 # 몇십 배로 터졌다. 그래서 "맨턴 빼고 한 번, 안 되면 넣고 한 번"으로 간다.
+# 첫 언덕 말고 나머지 언덕이 리프트 꼭대기에서 얼마나 떨어져야 하는지.
+# 첫 언덕은 음의 G 요건 때문에 CREST_DEPTH(8) 아래여야 하지만, 나머지는
+# 열차가 넘을 수만 있으면 된다. 측정용 손잡이다 (scripts/13_offline_ab.py).
+HILL_MARGIN = 2
+
 PLAIN_TURNS = frozenset((C.TURN_L5, C.TURN_R5, C.TURN_L3, C.TURN_R3))
 
 # 맨턴을 선호하는 반대쪽 성향. 뱅크는 격렬도를 흥미도와 맞바꾸는 레버라
@@ -98,8 +103,48 @@ def _hill(k, flat=0):
             + [C.FLAT_TO_DOWN25] + [C.DOWN25] * k + [C.DOWN25_TO_FLAT])
 
 
+def _ramp(k, up):
+    """층 바꾸기. 한 방향으로만 2k+2 만큼 올라가거나 내려간다.
+
+    언덕(`_hill`)은 제자리로 돌아오지만 이건 **다른 높이에 남는다.** 그래야
+    같은 x,y 를 다시 지날 수 있다 -- `Occupancy(ztol=2)` 는 z 가 3 이상
+    떨어지면 겹친 걸로 안 보므로 k=1 (4칸)이면 이미 층이 갈린다.
+    사람이 만든 코스터가 18x19 부지에서 813m 를 뽑는 방법이 이것이다.
+    """
+    if up:
+        return [C.FLAT_TO_UP25] + [C.UP25] * k + [C.UP25_TO_FLAT]
+    return [C.FLAT_TO_DOWN25] + [C.DOWN25] * k + [C.DOWN25_TO_FLAT]
+
+
+def _try_ramp(P, s, bounds, occ, goal, reserve, top_z, floor_z):
+    """지금 자리에서 층을 바꿔본다. (조각열, 끝상태, 점유) 또는 (None, s, occ).
+
+    위로 갈 여유가 있으면 위, 없으면 아래로 간다. 위쪽 한계는 리프트 꼭대기
+    (열차가 못 넘는다), 아래쪽 한계는 스테이션 높이다.
+    """
+    order = []
+    if top_z - s.z >= 6:
+        order.append(True)
+    if s.z - floor_z >= 6:
+        order.append(False)
+    random.shuffle(order)
+    for up in order:
+        room = (top_z - s.z) if up else (s.z - floor_z)
+        for k in range((room - 2) // 2, 0, -1):
+            ramp = _ramp(k, up)
+            s1, cells = _follow(P, s, ramp, bounds, occ)
+            if s1 is None:
+                continue
+            occ1 = occ.copy()
+            occ1.add(cells)
+            if _exits(P, s1, bounds, occ1) < 2 or P.h(s1, goal) > reserve:
+                continue
+            return ramp, s1, occ1
+    return None, s, occ
+
+
 def _add_hills(P, s, n_hills, top_z, bounds, occupied, weights, goal,
-               reserve, spread=0):
+               reserve, spread=0, floor_z=None, ramps=0, ramp_prob=0.0):
     """s 에서 언덕을 최대 n_hills 개 붙인다. (조각열, 끝상태, 점유) 를 돌려준다.
 
     언덕 꼭대기는 리프트 꼭대기보다 CREST_DEPTH 이상 낮아야 속도가 남아서
@@ -115,9 +160,23 @@ def _add_hills(P, s, n_hills, top_z, bounds, occupied, weights, goal,
     2k+4 조각이라, 이걸 안 걸면 A* 가 닫을 여지를 언덕이 먹어버린다.
     """
     from gen.requirements import CREST_DEPTH
+    if floor_z is None:
+        floor_z = goal.z
     seq, occ = [], occupied.copy()
-    for i in range(n_hills):
+    left_ramps = ramps
+    i = 0
+    while i < n_hills:
+        i += 1
         placed = False
+        # 층을 미리 바꿔둔다. 배치가 막힌 다음에 바꾸면 이미 그 층 구석이라
+        # 갈 곳이 없다. 실측: 실패 때만 바꾸면 길이 중앙이 476 -> 492 에 그친다.
+        if left_ramps > 0 and random.random() < ramp_prob:
+            ramp, s1, occ1 = _try_ramp(P, s, bounds, occ, goal, reserve,
+                                       top_z, floor_z)
+            if ramp is not None:
+                seq += ramp
+                s, occ = s1, occ1
+                left_ramps -= 1
         for _try in range(4):
             steps = random.randint(1, spread) if (spread and (i or _try)) else 0
             if _try and not steps:
@@ -131,7 +190,12 @@ def _add_hills(P, s, n_hills, top_z, bounds, occupied, weights, goal,
                 continue
             occ0 = occ.copy()
             occ0.add(cells0)
-            kmax = (top_z - s0.z - CREST_DEPTH - 2) // 2
+            # 첫 언덕만 CREST_DEPTH 만큼 낮게 (음의 G 요건은 깊은 꼭대기
+            # **하나**면 충족된다). 나머지는 부지 천장(리프트 꼭대기 - headroom)
+            # 까지 올릴 수 있다 -- 그래야 높이 대역을 층으로 나눠 쓸 수 있다.
+            # 대역을 CREST_DEPTH 로 묶어두면 층이 2~3개밖에 안 나온다.
+            margin = CREST_DEPTH if i == 1 else HILL_MARGIN
+            kmax = (top_z - s0.z - margin - 2) // 2
             for k in range(kmax, 0, -1):
                 hill = _hill(k, flat=random.randint(0, 1))
                 s1, cells = _follow(P, s0, hill, bounds, occ0)
@@ -149,7 +213,17 @@ def _add_hills(P, s, n_hills, top_z, bounds, occupied, weights, goal,
             if placed:
                 break
         if not placed:
-            break
+            # 이 층이 찼다. 층을 바꿔 빈 공간으로 옮기고 같은 언덕을 다시 노린다.
+            if left_ramps <= 0:
+                break
+            ramp, s1, occ1 = _try_ramp(P, s, bounds, occ, goal, reserve,
+                                       top_z, floor_z)
+            if ramp is None:
+                break
+            seq += ramp
+            s, occ = s1, occ1
+            left_ramps -= 1
+            i -= 1
     return seq, s, occ
 
 
@@ -186,7 +260,8 @@ def plan_episode(sim: TrackSimulator, station_end: State, goal: State,
                  bounds: Bounds, lift_pieces=None, wander_steps=None,
                  close_budget=24, headroom=2, ztol=2, banked=True,
                  attempts=40, strict_banked=True, time_budget=20.0,
-                 station_cells=(), hills=0, hill_spread=0, require=False):
+                 station_cells=(), hills=0, hill_spread=0, ramps=0, ramp_prob=0.0,
+                 require=False):
     """게임 없이 폐곡선 시퀀스 하나를 설계한다. [(조각, 체인), ...] 또는 None.
 
     goal 은 스테이션 첫 조각의 진입점 -- 여기로 정확히 돌아오면 폐곡선이다.
@@ -208,6 +283,9 @@ def plan_episode(sim: TrackSimulator, station_end: State, goal: State,
 
     hills: 붙일 낙타등 언덕 수, hill_spread: 언덕 사이 워크 길이 상한
     (`_add_hills`). spread 가 0 이면 첫 낙하 뒤에 몰리고, 크면 본체에 흩어진다.
+    ramps: 층을 몇 번까지 바꿀지 (`_ramp`). 한 층이 차면 위아래로 옮겨 같은
+    x,y 를 다시 쓴다. 주행 길이가 흥미도의 제일 강한 레버인데 부지 면적이
+    그 길이를 막고 있었다 (면적을 키워도 490m 에서 포화).
     require: True 면 우든 코스터 요건(gen/requirements.py)을 못 채울 것으로
     예측되는 설계를 버리고 다시 뽑는다. 요건 미달 트랙은 게임이 평점을 절반으로
     깎는다 -- 2026-09-19 까지 데이터의 75% 가 그랬다.
@@ -263,7 +341,9 @@ def plan_episode(sim: TrackSimulator, station_end: State, goal: State,
         hill_seq = []
         if hills:
             hill_seq, s, occ0 = _add_hills(P, s, hills, top.z, rb, occ0, weights,
-                                           goal, close_budget, spread=hill_spread)
+                                           goal, close_budget, spread=hill_spread,
+                                           floor_z=goal.z, ramps=ramps,
+                                           ramp_prob=ramp_prob)
         drop = drop + hill_seq
 
         # 4) 무작위 워크로 본체 모양을 만든다.

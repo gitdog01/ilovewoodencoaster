@@ -62,6 +62,16 @@ def generator_version():
 
 GEN = generator_version()
 
+# 자기충돌로 볼 세로 여유.
+#
+# **4 로 올려봤다가 되돌렸다** (gen10 -> gen11, 2026-09-20). 4 면 게임 배치 거부가
+# 사라진다 (650m 이상 설계가 ztol 2 에서 40%, ztol 4 에서 12/12 성공). 그런데
+# 설계 길이가 559 -> 504m 로 깎여서, 게임에서 실제로 모인 트랙은 오히려 짧았다
+# (중앙 424m vs ztol 2 의 456m). 인스턴스를 하나만 써도 442m 라 CPU 경합 탓도
+# 아니다. **추론(best-of-N)에서는 다시 볼 것** -- 거기서는 후보가 전부 놓이는 게
+# 곧 품질이라 반대로 이득일 수 있다.
+ZTOL = 2
+
 sim = TrackSimulator("geometry.json")
 origin = (67, 66, 14)
 DIRECTION = 0
@@ -101,7 +111,13 @@ def sample_config():
     # 더 늘려도(8~14, 12~20) 안 늘어난다 -- 부지 공간이 한계다.
     hills = random.randint(4, 9)
     hill_spread = 6
-    return width, depth, lift, wander, close, banked, brake_speed, hills, hill_spread
+    # 층 바꾸기(_ramp)는 **효과가 없어서 껐다** (gen9 -> gen10). 설계 200개
+    # 짝지어 비교하니 길이 중앙 556 vs 556 으로 차이가 없다. 코드와 손잡이는
+    # 남겨뒀다. 층 쌓기를 실제로 푼 건 램프가 아니라 ztol 이다 (아래).
+    ramps = 0
+    ramp_prob = 0.0
+    return (width, depth, lift, wander, close, banked, brake_speed, hills,
+            hill_spread, ramps, ramp_prob)
 
 
 os.makedirs(os.path.dirname(args.out), exist_ok=True)
@@ -112,14 +128,15 @@ with RCTClient.discover(ports=ports) as c, open(args.out, "a", encoding="utf-8")
     env = WoodenCoasterEnv(c, origin=origin)
     for i in range(args.n):
         (width, depth, lift, wander, close, banked, brake_speed,
-         hills, hill_spread) = sample_config()
+         hills, hill_spread, ramps, ramp_prob) = sample_config()
         env.brake_speed = brake_speed
         bounds = Bounds.plot(origin, DIRECTION, width, depth, args.height)
         seq = generate_episode(env, sim, bounds, max_pieces=250,
                                lift_pieces=lift, wander_steps=wander,
                                close_budget=close, banked=banked,
                                hills=hills, hill_spread=hill_spread,
-                               require=True)
+                               ramps=ramps, ramp_prob=ramp_prob,
+                               ztol=ZTOL, require=True)
         if seq is None:
             print(f"[{i+1}/{args.n}] 폐곡선 실패 (w={width} d={depth} lift={lift})")
             continue
@@ -134,7 +151,7 @@ with RCTClient.discover(ports=ports) as c, open(args.out, "a", encoding="utf-8")
             "lift_pieces": lift,
             "banked": banked,
             "brake_speed": brake_speed,
-            "hills": hills, "hill_spread": hill_spread,
+            "hills": hills, "hill_spread": hill_spread, "ramps": ramps,
             "n_brake": sum(1 for t, _c in seq if t in C.BRAKES),
             "station": 3,
             # 세대 추적용. gen 은 생성기 커밋, seed+port 는 재현용.

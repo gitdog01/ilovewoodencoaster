@@ -64,10 +64,18 @@ GENERATIONS = {
     # gen8 (2026-09-20): 워크가 한 수 앞을 봐서 막다른 길을 피한다 + 워크 길이 2배.
     # 워크가 중앙 2스텝에서 10스텝으로 늘었다.
     "run8_":  ("gen8", "", "막다른 길 회피 + 긴 워크"),
+    # gen9 (2026-09-20): 층 쌓기. 같은 x,y 를 다른 z 로 다시 쓰고(_ramp),
+    # 첫 언덕 말고는 높이 제한을 풀었다. 설계 길이 중앙 476 -> 594m.
+    "run9_":  ("gen9", "", "층 쌓기 (_ramp) + 언덕 높이 제한 완화"),
+    # gen10 (2026-09-20): ztol 2 -> 4. 긴 트랙이 게임에 실제로 놓인다.
+    # 램프는 효과가 없어 껐다.
+    "run10_": ("gen10", "", "ztol 4 (긴 트랙 배치) + 램프 제거"),
+    # gen11 (2026-09-20): ztol 2 로 복귀. gen8 + 언덕 높이 제한 완화만 남겼다.
+    "run11_": ("gen11", "", "gen8 + 언덕 높이 제한 완화"),
 }
 # 커밋 -> 세대. 레코드에 meta.gen 이 있을 때 세대를 붙이는 데 쓴다.
 COMMIT_TO_GEN = {c: g for g, c, _ in GENERATIONS.values() if c}
-GEN_ORDER = ["gen1", "gen2", "gen3", "gen4", "gen5", "gen6", "gen7", "gen8"]
+GEN_ORDER = ["gen1", "gen2", "gen3", "gen4", "gen5", "gen6", "gen7", "gen8", "gen9", "gen10", "gen11"]
 
 
 def generation_of(record, filename):
