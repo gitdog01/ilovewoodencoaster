@@ -44,18 +44,18 @@ def check(label, claimed, actual, ok=None):
 print(f"레코드 {len(rows)}개, 파일 {size_mb:.0f}MB")
 print(f"세대: {dict(gens.most_common())}\n")
 
-check("dataset.jsonl 총 개수", 140868, len(rows))
-check("파일 크기(MB)", 146, round(size_mb), abs(size_mb - 146) < 2)
-check("gen2+ 개수", 140868, sum(v for k, v in gens.items() if k != "gen1"))
+check("dataset.jsonl 총 개수", 145521, len(rows))
+check("파일 크기(MB)", 153, round(size_mb), abs(size_mb - 153) < 2)
+check("gen2+ 개수", 145521, sum(v for k, v in gens.items() if k != "gen1"))
 # dataset.jsonl 을 --min-gen gen2 로 다시 만들어서 gen1 은 아예 안 들어간다.
 check("gen1 개수", 0, gens["gen1"])
 
 FIELDS = [
-    ("흥미도", "excitement", 0.27, 2.38, 6.00),
-    ("격렬도", "intensity", 0.28, 3.17, 14.74),
-    ("멀미도", "nausea", 0.17, 1.76, 9.05),
-    ("좌우G", "maxLateralGs", 0.47, 2.29, 3.53),
-    ("최고속도", "maxSpeed", 21, 35, 47),
+    ("흥미도", "excitement", 0.27, 2.39, 6.13),
+    ("격렬도", "intensity", 0.28, 3.20, 14.74),
+    ("멀미도", "nausea", 0.17, 1.77, 9.13),
+    ("좌우G", "maxLateralGs", 0.47, 2.31, 3.58),
+    ("최고속도", "maxSpeed", 21, 35, 48),
 ]
 for name, key, cmin, cmed, cmax in FIELDS:
     vals = [r["stats"][key] for r in rows]
@@ -66,17 +66,17 @@ for name, key, cmin, cmed, cmax in FIELDS:
 
 lens = [len(r["sequence"]) for r in rows]
 check("조각 수 min", 19, min(lens))
-check("조각 수 max", 109, max(lens))
+check("조각 수 max", 141, max(lens))
 
 over10 = sum(1 for r in rows if r["stats"]["intensity"] > 10)
-check("격렬도 10 초과 개수", 6669, over10)
+check("격렬도 10 초과 개수", 6956, over10)
 check("격렬도 10 초과 비율(%)", 4.7, round(100 * over10 / len(rows), 1),
       abs(100 * over10 / len(rows) - 4.7) < 0.1)
 
 # gen4 banked 레버 표 (CLAUDE.md "수집 결과")
 g4 = [r for r in rows if (r.get("meta") or {}).get("gen_label") == "gen4"]
 for flag, cn, cplain, clatg, cint in [(True, 37916, 1.0, 1.94, 3.05),
-                                      (False, 35261, 14.0, 2.48, 3.33)]:
+                                      (False, 35260, 14.0, 2.48, 3.33)]:
     sub = [r for r in g4 if bool(r.get("banked")) is flag]
     check(f"gen4 banked={flag} n", cn, len(sub))
     if not sub:
@@ -89,7 +89,7 @@ for flag, cn, cplain, clatg, cint in [(True, 37916, 1.0, 1.94, 3.05),
     check(f"gen4 banked={flag} 격렬중앙", cint, round(inten, 2), abs(inten - cint) < 0.02)
 
 p95 = sorted(lens)[int(len(lens) * 0.95)]
-check("시퀀스 p95 (data.py 주석)", 69, p95, abs(p95 - 69) <= 1)
+check("시퀀스 p95 (data.py 주석)", 71, p95, abs(p95 - 71) <= 1)
 
 print(f"{'':2} {'주장':<32} {'문서':>10} {'실제':>10}")
 bad = 0
