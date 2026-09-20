@@ -296,6 +296,23 @@ class Planner:
         return None
 
     # -- 무작위 워크 ------------------------------------------------------
+    def _has_exit(self, s: State, bounds: Bounds, occ, extra=()):
+        """이 상태에서 놓을 수 있는 조각이 하나라도 있나 (막다른 길 판정).
+
+        extra 는 아직 occ 에 안 넣은 타일들 (지금 놓으려는 조각 자신).
+        Occupancy 를 통째로 복사하면 워크 스텝마다 수천 개를 베끼게 되므로
+        작은 집합으로 따로 본다.
+        """
+        band = occ._band
+        blocked = {(x, y, z + dz) for x, y, z in extra for dz in band}
+        for _t, nxt, cells in self.successors(s):
+            if not _in_bounds(bounds, nxt) or occ.blocked(cells):
+                continue
+            if any(c in blocked for c in cells):
+                continue
+            return True
+        return False
+
     def wander(self, start: State, goal: State, bounds: Bounds, occupied,
                steps, weights, reserve):
         """steps 개만큼 무작위로 뻗는다. 언제든 goal 로 닫을 여지를 남긴다.
@@ -303,6 +320,14 @@ class Planner:
         reserve 는 "닫는 데 남겨둘 조각 수". 매 스텝 h(다음상태, goal) <= reserve 를
         유지해서, 아무리 멀리 나가도 이론상 되돌아올 여지는 남긴다.
         (실제 닫기는 plan() 이 하고, 여기서는 h() 하한으로만 대충 걸러낸다.)
+
+        **한 수 앞을 본다** (2026-09-20). RCT 조각은 예외 없이 한 칸 이상
+        전진해서 제자리 회전이 없으므로, 부지 구석에서 벽을 마주보면 그 자리가
+        끝이다. 실측: 워크가 중앙 **2스텝**만에 멈췄고 멈춘 이유는 거의 전부
+        "모든 후보가 부지 밖"이었다. 트랙 길이가 468m 에서 포화된 원인이 이것이고,
+        길이는 흥미도의 제일 강한 레버다 (50m 당 약 +0.15).
+        그래서 다음 수가 막다른 길인 후보를 먼저 버린다. 전부 막다른 길이면
+        어차피 끝이므로 그때는 원래대로 아무거나 고른다.
         """
         s = start
         seq = []
@@ -319,6 +344,8 @@ class Planner:
                 cands.append((t, nxt, cells))
             if not cands:
                 break
+            alive = [c for c in cands if self._has_exit(c[1], bounds, occ, c[2])]
+            cands = alive or cands
             ws = [weights.get(t, 1) for t, _, _ in cands]
             t, nxt, cells = random.choices(cands, weights=ws, k=1)[0]
             seq.append(t)

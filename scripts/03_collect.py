@@ -79,7 +79,10 @@ def sample_config():
     # 하한 6 (gen6, 2026-09-19): 리프트 3~5 는 최고 낙하가 12 에 못 미쳐 우든
     # 코스터 요건에 **전부** 걸린다 (평점 반토막). 데이터로 쓸 가치가 없다.
     lift = random.randint(10, 13) if random.random() < 0.2 else random.randint(6, 9)
-    wander = random.randint(10, min(60, width + depth))
+    # gen8: 워크가 막다른 길을 피하게 되면서 길게 뻗을 수 있게 됐다 (planner.wander).
+    # 길이는 흥미도의 제일 강한 레버다 (50m 당 약 +0.15). 오프라인 실측으로
+    # 여기를 2배로 하면 설계 길이 중앙이 494 -> 580m 가 된다.
+    wander = random.randint(20, min(120, 2 * (width + depth)))
     close = max(20, (width + depth) // 2 + 8)
     # 뱅크(커빙) 성향. 켜면 좌우G가 내려가 격렬도가 낮은 순한 트랙, 끄면
     # 맨턴 위주로 격렬한 트랙이 나온다. 둘 다 있어야 조건부 생성이 배운다.

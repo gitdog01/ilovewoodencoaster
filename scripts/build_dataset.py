@@ -61,10 +61,13 @@ GENERATIONS = {
     # gen7 (2026-09-20): 언덕을 4~9개로 늘리고 본체 전체에 흩었다 (hill_spread).
     # 낙하 수 중앙 3 -> 6 (사람은 9).
     "run7_":  ("gen7", "", "언덕을 본체까지 흩뿌림"),
+    # gen8 (2026-09-20): 워크가 한 수 앞을 봐서 막다른 길을 피한다 + 워크 길이 2배.
+    # 워크가 중앙 2스텝에서 10스텝으로 늘었다.
+    "run8_":  ("gen8", "", "막다른 길 회피 + 긴 워크"),
 }
 # 커밋 -> 세대. 레코드에 meta.gen 이 있을 때 세대를 붙이는 데 쓴다.
 COMMIT_TO_GEN = {c: g for g, c, _ in GENERATIONS.values() if c}
-GEN_ORDER = ["gen1", "gen2", "gen3", "gen4", "gen5", "gen6", "gen7"]
+GEN_ORDER = ["gen1", "gen2", "gen3", "gen4", "gen5", "gen6", "gen7", "gen8"]
 
 
 def generation_of(record, filename):
