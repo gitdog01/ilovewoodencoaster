@@ -191,6 +191,20 @@ class RCTClient:
         """
         return self.call("setGameSpeed", {"speed": speed}, strict=False)
 
+    def set_vehicles(self, ride_id, cars=None, trains=None):
+        """열차 편성을 바꾼다 (칸 수 / 열차 수).
+
+        평점 공식의 BonusTrainLength 는 **칸 수에 비례해 흥미도를 준다.**
+        플러그인에는 엔드포인트가 있었는데 파이썬에서 한 번도 안 불렀다 --
+        그래서 우리 트랙은 내내 기본 편성으로만 평가됐다.
+        """
+        params = {"rideId": ride_id}
+        if cars is not None:
+            params["numCarsPerTrain"] = cars
+        if trains is not None:
+            params["numTrains"] = trains
+        return self.call("setRideVehicles", params)
+
     def start_test(self, ride_id):
         return self.call("startRideTest", {"rideId": ride_id})
 

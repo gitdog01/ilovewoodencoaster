@@ -442,15 +442,39 @@ function main() {
     async function handleSetRideVehicles(params) {
         const { rideId, numCarsPerTrain, numTrains } = params || {};
         if (typeof rideId !== "number") throw new Error("Missing or invalid parameter: rideId");
+        // 2026-09-20: 이 빌드의 Ride 객체에는 numCarsPerTrain / numVehicles 가
+        // **없다** (JSON.stringify 가 undefined 키를 버려서 알아냈다). 그래서
+        // 게임 액션으로만 바꿀 수 있다. 인자 조합을 몇 가지 시도하고, 전부
+        // 실패하면 마지막 에러를 그대로 올려보낸다 (디버깅용).
+        async function applyVehicle(type, value) {
+            const tries = [
+                { ride: rideId, type: type, value: value, colour: 0 },
+                { ride: rideId, type: type, value: value },
+                { ride: rideId, rideType: type, value: value, colour: 0 },
+            ];
+            let last = null;
+            for (const args of tries) {
+                try {
+                    await executeAction("ridesetvehicle", args);
+                    return { ok: true, args: Object.keys(args).join(",") };
+                } catch (e) {
+                    last = e && e.message ? e.message : String(e);
+                }
+            }
+            return { ok: false, error: last };
+        }
+        const applied = {};
         if (typeof numCarsPerTrain === "number") {
-            await executeAction("ridesetvehicle", { ride: rideId, type: 1, value: numCarsPerTrain });
+            applied.cars = await applyVehicle(1, numCarsPerTrain);
         }
         if (typeof numTrains === "number") {
-            await executeAction("ridesetvehicle", { ride: rideId, type: 0, value: numTrains });
+            applied.trains = await applyVehicle(0, numTrains);
         }
         const ride = map.getRide(rideId);
-        return { rideId: rideId, applied: true,
-                 vehicles: ride && ride.vehicles ? ride.vehicles.length : null };
+        return { rideId: rideId, result: applied,
+                 vehicles: ride && ride.vehicles ? ride.vehicles.length : null,
+                 cars: ride && ride.vehicles && ride.vehicles[0] &&
+                       ride.vehicles[0].cars ? ride.vehicles[0].cars.length : null };
     }
 
     async function handleStartRideTest(params) {
