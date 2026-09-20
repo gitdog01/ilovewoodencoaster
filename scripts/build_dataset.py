@@ -72,10 +72,13 @@ GENERATIONS = {
     "run10_": ("gen10", "", "ztol 4 (긴 트랙 배치) + 램프 제거"),
     # gen11 (2026-09-20): ztol 2 로 복귀. gen8 + 언덕 높이 제한 완화만 남겼다.
     "run11_": ("gen11", "", "gen8 + 언덕 높이 제한 완화"),
+    # gen12 (2026-09-20): 60도 어휘. geometry.json 에 60도 계열 6종을 다단계로
+    # 추출해 넣고(14_extract_slopes.py), 낙하/언덕을 60도로 만들 수 있게 했다.
+    "run12_": ("gen12", "", "60도 낙하/언덕"),
 }
 # 커밋 -> 세대. 레코드에 meta.gen 이 있을 때 세대를 붙이는 데 쓴다.
 COMMIT_TO_GEN = {c: g for g, c, _ in GENERATIONS.values() if c}
-GEN_ORDER = ["gen1", "gen2", "gen3", "gen4", "gen5", "gen6", "gen7", "gen8", "gen9", "gen10", "gen11"]
+GEN_ORDER = ["gen1", "gen2", "gen3", "gen4", "gen5", "gen6", "gen7", "gen8", "gen9", "gen10", "gen11", "gen12"]
 
 
 def generation_of(record, filename):

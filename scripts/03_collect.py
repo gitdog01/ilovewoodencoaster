@@ -29,6 +29,9 @@ ap.add_argument("--seed", type=int, default=None,
 ap.add_argument("--speed", type=int, default=8,
                 help="게임 시뮬레이션 속도 (평점 대기가 전체 시간의 대부분이라 "
                      "8로 올리면 트랙당 몇 배 빨라진다). 1이면 실시간.")
+ap.add_argument("--steep-prob", type=float, default=0.0,
+                help="에피소드를 60도 낙하/언덕으로 만들 확률 (gen12). "
+                     "같은 높이를 절반 이하의 타일로 처리한다.")
 ap.add_argument("--port", type=int, default=None,
                 help="특정 인스턴스에 붙는다 (병렬 수집용). "
                      "생략하면 기존처럼 첫 빈 포트를 자동 탐색.")
@@ -116,8 +119,10 @@ def sample_config():
     # 남겨뒀다. 층 쌓기를 실제로 푼 건 램프가 아니라 ztol 이다 (아래).
     ramps = 0
     ramp_prob = 0.0
+    # 60도 낙하/언덕 (gen12). 스톡 우든 코스터 조각의 14.7% 가 60도다.
+    steep = random.random() < args.steep_prob
     return (width, depth, lift, wander, close, banked, brake_speed, hills,
-            hill_spread, ramps, ramp_prob)
+            hill_spread, ramps, ramp_prob, steep)
 
 
 os.makedirs(os.path.dirname(args.out), exist_ok=True)
@@ -128,14 +133,14 @@ with RCTClient.discover(ports=ports) as c, open(args.out, "a", encoding="utf-8")
     env = WoodenCoasterEnv(c, origin=origin)
     for i in range(args.n):
         (width, depth, lift, wander, close, banked, brake_speed,
-         hills, hill_spread, ramps, ramp_prob) = sample_config()
+         hills, hill_spread, ramps, ramp_prob, steep) = sample_config()
         env.brake_speed = brake_speed
         bounds = Bounds.plot(origin, DIRECTION, width, depth, args.height)
         seq = generate_episode(env, sim, bounds, max_pieces=250,
                                lift_pieces=lift, wander_steps=wander,
                                close_budget=close, banked=banked,
                                hills=hills, hill_spread=hill_spread,
-                               ramps=ramps, ramp_prob=ramp_prob,
+                               ramps=ramps, ramp_prob=ramp_prob, steep=steep,
                                ztol=ZTOL, require=True)
         if seq is None:
             print(f"[{i+1}/{args.n}] 폐곡선 실패 (w={width} d={depth} lift={lift})")
@@ -152,6 +157,7 @@ with RCTClient.discover(ports=ports) as c, open(args.out, "a", encoding="utf-8")
             "banked": banked,
             "brake_speed": brake_speed,
             "hills": hills, "hill_spread": hill_spread, "ramps": ramps,
+            "steep": steep,
             "n_brake": sum(1 for t, _c in seq if t in C.BRAKES),
             "station": 3,
             # 세대 추적용. gen 은 생성기 커밋, seed+port 는 재현용.

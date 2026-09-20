@@ -38,6 +38,13 @@ WEIGHTS = {
     C.FLAT_TO_LEFT_BANK: 4, C.FLAT_TO_RIGHT_BANK: 4,
     C.LEFT_BANK_TO_FLAT: 3, C.RIGHT_BANK_TO_FLAT: 3,
     C.LEFT_BANK: 1, C.RIGHT_BANK: 1,
+    # 60도 경사 (2026-09-20 추가). 스톡 우든 코스터 조각의 14.7% 가 이것이다.
+    # 한 타일에 높이 8 을 먹는다 (Up25 는 2). 같은 높이를 4분의 1 면적으로
+    # 처리하니 남는 x,y 를 트랙에 더 쓸 수 있다 -- 길이가 흥미도의 제일 강한
+    # 레버인데 부지 면적에 막혀 있었다.
+    # 가중치를 높이면 트랙이 급경사 범벅이 되어 열차가 못 넘으니 낮게 둔다.
+    C.UP25_TO_UP60: 1, C.UP60: 1, C.UP60_TO_UP25: 1,
+    C.DOWN25_TO_DOWN60: 2, C.DOWN60: 2, C.DOWN60_TO_DOWN25: 2,
     # 브레이크 (2026-09-13 추가). 기하는 FLAT 과 같아서 어휘에 넣기만 하면 된다.
     # **격렬도 구멍(4.0~5.0, 10.5~13.5)을 메울 수 있는 유일한 후보다** -- 격렬도는
     # 최고속도의 계단 함수인데, 속도를 중간값으로 깎을 수단이 이것뿐이다.
@@ -87,20 +94,37 @@ def _lift(lift_pieces):
             + [(C.UP25_TO_FLAT, True)])
 
 
-def _drop(drop_pieces):
-    """리프트 직후의 첫 낙하. 열차 속도의 원천이라 없으면 트랙이 밋밋해진다."""
-    return ([C.FLAT_TO_DOWN25] + [C.DOWN25] * drop_pieces + [C.DOWN25_TO_FLAT])
+def _drop(drop_pieces, steep=False):
+    """리프트 직후의 첫 낙하. 열차 속도의 원천이라 없으면 트랙이 밋밋해진다.
+
+    steep=True 면 60도로 떨어진다. 같은 높이를 **4분의 1 타일 수**로 처리하므로
+    (Down60 은 한 타일에 8, Down25 는 2) 남는 x,y 를 트랙 길이에 쓸 수 있다.
+    스톡 우든 코스터도 조각의 14.7% 가 60도다.
+    """
+    total = 2 * drop_pieces + 2          # 25도판이 내려가는 높이
+    # 급경사판은 **같은 높이**를 더 짧은 거리로 내려간다. 조각별 dz (실측):
+    #   FlatToDown25 1, Down25 2, Down25ToDown60 4, Down60 8, Down60ToDown25 4
+    # 그래서 최소 높이가 1+4+4+1 = 10 이다. 그보다 얕으면 60도를 못 쓴다.
+    if not steep or total < 10:
+        return [C.FLAT_TO_DOWN25] + [C.DOWN25] * drop_pieces + [C.DOWN25_TO_FLAT]
+    k, rest = divmod(total - 10, 8)
+    return ([C.FLAT_TO_DOWN25, C.DOWN25_TO_DOWN60] + [C.DOWN60] * k
+            + [C.DOWN60_TO_DOWN25] + [C.DOWN25] * (rest // 2) + [C.DOWN25_TO_FLAT])
 
 
-def _hill(k, flat=0):
+def _hill(k, flat=0, steep=False):
     """낙타등 언덕 하나. 오르막 k칸 -> 꼭대기(평지 flat칸) -> 내리막 k칸.
 
     우든 코스터 요건 두 개를 직접 채우려고 넣었다 (gen/requirements.py):
     낙하 1회를 더하고, 꼭대기를 속도가 붙은 채로 넘어 음의 G(에어타임)를 만든다.
     높이는 2k+2 오르고 같은 만큼 내려온다.
+
+    steep=True 면 내려오는 쪽을 60도로 한다 (`_drop` 참고). 올라가는 쪽은
+    25도로 둔다 -- 60도 오르막은 같은 높이를 짧게 먹는 대신 열차가 넘기 어렵다.
     """
-    return ([C.FLAT_TO_UP25] + [C.UP25] * k + [C.UP25_TO_FLAT] + [C.FLAT] * flat
-            + [C.FLAT_TO_DOWN25] + [C.DOWN25] * k + [C.DOWN25_TO_FLAT])
+    up = [C.FLAT_TO_UP25] + [C.UP25] * k + [C.UP25_TO_FLAT]
+    down = _drop(k, steep=steep)
+    return up + [C.FLAT] * flat + down
 
 
 def _ramp(k, up):
@@ -144,7 +168,8 @@ def _try_ramp(P, s, bounds, occ, goal, reserve, top_z, floor_z):
 
 
 def _add_hills(P, s, n_hills, top_z, bounds, occupied, weights, goal,
-               reserve, spread=0, floor_z=None, ramps=0, ramp_prob=0.0):
+               reserve, spread=0, floor_z=None, ramps=0, ramp_prob=0.0,
+               steep=False):
     """s 에서 언덕을 최대 n_hills 개 붙인다. (조각열, 끝상태, 점유) 를 돌려준다.
 
     언덕 꼭대기는 리프트 꼭대기보다 CREST_DEPTH 이상 낮아야 속도가 남아서
@@ -197,7 +222,7 @@ def _add_hills(P, s, n_hills, top_z, bounds, occupied, weights, goal,
             margin = CREST_DEPTH if i == 1 else HILL_MARGIN
             kmax = (top_z - s0.z - margin - 2) // 2
             for k in range(kmax, 0, -1):
-                hill = _hill(k, flat=random.randint(0, 1))
+                hill = _hill(k, flat=random.randint(0, 1), steep=steep)
                 s1, cells = _follow(P, s0, hill, bounds, occ0)
                 if s1 is None:
                     continue
@@ -261,7 +286,7 @@ def plan_episode(sim: TrackSimulator, station_end: State, goal: State,
                  close_budget=24, headroom=2, ztol=2, banked=True,
                  attempts=40, strict_banked=True, time_budget=20.0,
                  station_cells=(), hills=0, hill_spread=0, ramps=0, ramp_prob=0.0,
-                 require=False):
+                 steep=False, require=False):
     """게임 없이 폐곡선 시퀀스 하나를 설계한다. [(조각, 체인), ...] 또는 None.
 
     goal 은 스테이션 첫 조각의 진입점 -- 여기로 정확히 돌아오면 폐곡선이다.
@@ -322,7 +347,7 @@ def plan_episode(sim: TrackSimulator, station_end: State, goal: State,
         n_drop = max(1, (top.z - goal.z) // 2 - random.randint(0, 2))
         drop, s = None, None
         while n_drop >= 1 and s is None:
-            drop = _drop(n_drop)
+            drop = _drop(n_drop, steep=steep)
             # 낙하 자체는 꼭대기에서 시작하므로 rb(천장 낮춤)가 아니라 원래 부지로 잰다.
             s, cells = _follow(P, top, drop, bounds, occupied)
             # 부지 끝까지 내려가면 벽을 마주본 채 막다른 길이 된다 -> 더 짧게.
@@ -343,7 +368,7 @@ def plan_episode(sim: TrackSimulator, station_end: State, goal: State,
             hill_seq, s, occ0 = _add_hills(P, s, hills, top.z, rb, occ0, weights,
                                            goal, close_budget, spread=hill_spread,
                                            floor_z=goal.z, ramps=ramps,
-                                           ramp_prob=ramp_prob)
+                                           ramp_prob=ramp_prob, steep=steep)
         drop = drop + hill_seq
 
         # 4) 무작위 워크로 본체 모양을 만든다.

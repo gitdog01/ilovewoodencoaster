@@ -52,6 +52,8 @@ def main():
     ap.add_argument("--tracks", type=int, default=25, help="지어볼 트랙 수")
     ap.add_argument("--out", default=os.path.join(REPO, "footprints.json"))
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--fresh", action="store_true",
+                    help="기존 footprints.json 을 버리고 새로 쓴다 (기본은 병합)")
     args = ap.parse_args()
 
     import random

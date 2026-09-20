@@ -33,7 +33,7 @@ def condition_of(record):
     }
 
 
-GEN_ORDER = ["gen1", "gen2", "gen3", "gen4", "gen5", "gen6", "gen7", "gen8", "gen9", "gen10", "gen11"]
+GEN_ORDER = ["gen1", "gen2", "gen3", "gen4", "gen5", "gen6", "gen7", "gen8", "gen9", "gen10", "gen11", "gen12"]
 
 
 class TrackDataset:
