@@ -164,7 +164,13 @@ function main() {
         return new Promise((resolve, reject) => {
             context.executeAction(action, args, result => {
                 if (!result || (result.error && result.error !== "")) {
-                    reject(new Error((result && result.error) || "Unknown error"));
+                    // 코드 뒤에 게임이 준 설명을 붙인다. 코드만으로는 65535(=Unknown)
+                    // 같은 게 와서 원인을 못 찾았다 (2026-09-24 스톡 테스트 시작 실패).
+                    const detail = result
+                        ? [result.errorTitle, result.errorMessage].filter(Boolean).join(" / ")
+                        : "";
+                    reject(new Error(((result && result.error) || "Unknown error")
+                        + (detail ? ` (${detail})` : "")));
                 } else {
                     resolve(result);
                 }
@@ -740,23 +746,32 @@ function main() {
             return true;
         }
 
+        // 가장 z 가 가까운 후보를 고른다 (넓은 허용 오차에서 쌓인 트랙을 잘못 잡지 않게).
         function scan(tolerance, onlyCenter) {
             const list = onlyCenter ? [[0, 0]] : offsets;
+            let best = null;
             for (const [dx, dy] of list) {
                 const tx = baseX + dx;
                 const ty = baseY + dy;
                 const tile = map.getTile(tx, ty);
                 if (!tile) continue;
                 for (let i = 0; i < tile.numElements; i++) {
-                    if (matches(tile.elements[i], tolerance)) {
-                        return { tile, element: tile.elements[i], elementIndex: i, tileX: tx, tileY: ty };
+                    const elem = tile.elements[i];
+                    if (!matches(elem, tolerance)) continue;
+                    const dz = Math.abs(elem.baseZ - placedTileZ);
+                    if (!best || dz < best.dz) {
+                        best = { tile, element: elem, elementIndex: i, tileX: tx, tileY: ty, dz };
                     }
                 }
             }
-            return null;
+            return best;
         }
 
-        return scan(8, true) || scan(16, false);
+        // 2026-09-24: 허용 오차 16 은 우리 생성기 어휘(25도 경사까지)에서만 맞았다.
+        // 뱅크 경사 5칸 턴(224 등)은 beginZ 가 64 라 원점 타일 baseZ 가 요청 z 와
+        // 16 넘게 벌어진다 -> 게임엔 놓였는데 "못 찾음"으로 실패 처리됐다.
+        // 스톡 디자인을 그대로 지으려다 걸렸다 (scripts/15_stock_on_flat.py).
+        return scan(8, true) || scan(16, false) || scan(128, false);
     }
 
     async function handlePlaceTrackPiece(params) {
@@ -784,7 +799,7 @@ function main() {
             if (params.tileCoordinateX !== last.nextX
                 || params.tileCoordinateY !== last.nextY
                 || requestedTrainEntryZ !== last.nextZ
-                || params.direction !== last.nextDirection) {
+                || (params.direction & 3) !== (last.nextDirection & 3)) {
                 throw new Error(
                     `Placement does not continue from previous piece: `
                     + `train entry would be (${params.tileCoordinateX},${params.tileCoordinateY},${requestedTrainEntryZ}) dir=${params.direction}, `
@@ -811,7 +826,9 @@ function main() {
                 x: pixelCoordinateX,
                 y: pixelCoordinateY,
                 z: pixelCoordinateZ,
-                direction: params.direction,
+                // 이터레이터는 대각선 진행을 방향 4~7 로 주지만 trackplace 는 0~3 만
+                // 받는다 (대각 여부는 조각 타입이 정한다). 2026-09-24 스톡 대각선에서 걸림.
+                direction: params.direction & 3,
                 ride: params.ride,
                 trackType: params.trackType,
                 rideType: params.rideType,
@@ -833,7 +850,7 @@ function main() {
             throw new Error("Tile not found at placed position");
         }
 
-        const placed = findPlacedTrackElement(params.ride, params.trackType, params.direction, result.position);
+        const placed = findPlacedTrackElement(params.ride, params.trackType, params.direction & 3, result.position);
         if (!placed) throw new Error("Could not find track element on any nearby tile");
         console.log(`Found track element at index: ${placed.elementIndex} on tile: ${placed.tileX} ${placed.tileY}`);
 
@@ -1162,6 +1179,17 @@ function main() {
             if (!entrance) entrance = await tryPlaceEntranceOrExit(rideId, positions.entrance, false);
             if (!exit)     exit     = await tryPlaceEntranceOrExit(rideId, positions.exit, true);
             if (entrance && exit) break;
+        }
+        // 한쪽이 트랙에 막히면 반대쪽에도 시도한다. 스톡 디자인은 스테이션 바로
+        // 옆으로 트랙이 지나가는 게 흔해서 입구가 못 들어갔다 (2026-09-24).
+        // 입구와 출구가 같은 칸을 잡지 않게 쓴 칸은 건너뛴다.
+        const used = (p) => [entrance, exit].some(q => q && q.x === p.x && q.y === p.y);
+        for (let i = 0; i < stationPieces.length && !(entrance && exit); i++) {
+            const positions = entranceExitPositionsFor(stationPieces[i]);
+            if (!entrance && !used(positions.exit))
+                entrance = await tryPlaceEntranceOrExit(rideId, positions.exit, false);
+            if (!exit && !used(positions.entrance))
+                exit = await tryPlaceEntranceOrExit(rideId, positions.entrance, true);
         }
 
         if (entrance && exit) {

@@ -12,7 +12,10 @@
 
 2. **사람 vs 우리.** TD6 헤더에서 평점 외 통계를 뽑아 API 단위로 맞춘다.
    필드 위치는 OpenRCT2 TD6Track 구조체와 1바이트가 어긋나 있어서 원시 바이트를
-   보고 역산했다 (평점 0x5C 는 10_vocab_coverage.py 에서 검증된 위치):
+   보고 역산했다. 평점은 **0x5B/0x5C 흥미/격렬** 이다 (2026-09-24 정정 -- 예전엔
+   0x5C/0x5D 로 읽어 격렬도를 흥미도로 썼다. 10_vocab_coverage.py docstring 참고).
+   아래 필드는 스톡을 빈 평지에 지어 잰 실측과 대조해 맞는 걸 확인했다
+   (15_stock_on_flat.py; 길이/낙하 수/최고 낙하는 완전 일치, 속도 +-2):
        0x51 최고속 (x9/4 = 표시 mph)   0x52 평균속 (x9/4)
        0x53 주행 길이 m (2바이트 LE)   0x55/0x56/0x57 수직+/수직-/좌우 G (x0.32)
        0x59 낙하 수 (하위 6비트)        0x5A 최고 낙하 (원시 z)
@@ -68,7 +71,7 @@ def stock_stats(folder, ride_type):
             "maxNegativeVerticalGs": s8(d[0x56]) * 0.32,
             "maxLateralGs": d[0x57] * 0.32,
             "numDrops": d[0x59] & 0x3F, "highestDropHeight": d[0x5A],
-            "excitement": d[0x5C] / 10, "intensity": d[0x5D] / 10,
+            "excitement": d[0x5B] / 10, "intensity": d[0x5C] / 10,
             "width": d[0x81], "depth": d[0x82],
         })
     return out

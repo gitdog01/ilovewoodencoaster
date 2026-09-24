@@ -12,12 +12,18 @@
 
 TD6 형식 메모 (실측으로 확인한 것):
   - 파일 전체가 RCT2 sawyer RLE 로 눌려 있다. 마지막 4바이트는 체크섬이라 뺀다.
-  - 헤더: 0x00 ride_type, 0x5C/0x5D/0x5E 흥미/격렬/멀미 (x10), 0x81/0x82 필요 공간.
+  - 헤더: 0x00 ride_type, **0x5B/0x5C/0x5D 흥미/격렬/멀미** (x10), 0x81/0x82 필요 공간.
     우든 코스터는 ride_type 52.
-  - **조각열은 0xA5 부터** 시작한다 (0xA4 로 적어둔 자료가 많은데 실측하면 아니다).
-    조각 하나가 2바이트 `(type, flags)` 이고 type 0xFF 가 종료자, flags 의 0x80 이
-    체인리프트다. 검증: 0xA5 로 잡으면 종료자가 항상 짝수 위치에 떨어지고 첫
-    조각이 스테이션/평지류로 나온다. 0xA4 로 잡으면 전부 Flat 으로 읽힌다.
+    예전엔 0x5C/0x5D/0x5E 로 읽어서 **격렬도를 흥미도로, 멀미도를 격렬도로** 썼다.
+    2026-09-24 스톡 29개를 빈 평지에 지어 재보니 0x5C 가 실측 격렬도와, 0x5D 가
+    실측 멀미도와 29개 전부 +-0.1 안에서 맞았다. 0x5E 는 100~215 라 평점이 아니다.
+  - **조각열은 0xA3 부터** 시작한다. 조각 하나가 2바이트 `(type, flags)` 이고
+    type 0xFF 가 종료자, flags 의 0x80 이 체인리프트다.
+    예전엔 0xA5 로 적었는데 **스테이션 한 칸(0xA3 의 MIDDLE_STATION)을 빠뜨렸다.**
+    0xA3 과 0xA5 는 같은 짝수 정렬이라 어느 쪽이든 그럴듯하게 읽힌다. 2026-09-24
+    스톡 30개를 게임에 그대로 지어보니 전부 정확히 한 칸 모자라 안 닫혔고,
+    0xA3 로 고치자 닫혔다 (scripts/15_stock_on_flat.py). 옛 분석의 조각 수
+    3,845 와 재현 3,815 의 차이도 정확히 30(=디자인 수)이었다.
 
 조각 이름은 **추측하지 않는다.** `rct/constants.py` 의 NAMES(플러그인이 노출하는
 것)와 `track_names.json`(게임의 `getAllTrackSegments` 설명)만 쓴다. 둘 다 없으면
@@ -43,7 +49,7 @@ DEFAULT_TRACKS = [
     r"C:\GOG Games\RollerCoaster Tycoon 2\Tracks",
 ]
 NAMES_FILE = os.path.join(REPO, "track_names.json")
-ELEMENTS_OFFSET = 0xA5
+ELEMENTS_OFFSET = 0xA3
 
 
 def rle_decode(data):
@@ -82,8 +88,8 @@ def parse_td6(path):
         i += 2
     else:
         return None
-    return dec[0], seq, {"exc": dec[0x5C] / 10, "int": dec[0x5D] / 10,
-                         "nau": dec[0x5E] / 10}
+    return dec[0], seq, {"exc": dec[0x5B] / 10, "int": dec[0x5C] / 10,
+                         "nau": dec[0x5D] / 10}
 
 
 def load_segments():
