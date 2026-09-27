@@ -38,6 +38,12 @@ ap.add_argument("--hill-spread", type=int, default=6,
                 help="언덕 사이 워크 길이 상한. 0 이면 둔덕을 연달아 붙인다 (gen13)")
 ap.add_argument("--hill-kmax", type=int, default=None,
                 help="첫 언덕 말고 나머지 언덕 크기 상한. 0 이면 높이 2 둔덕 (gen13)")
+ap.add_argument("--drop-to-ground", action="store_true",
+                help="첫 낙하를 지면까지 다 내려간다 (gen14, 평점의 SURFACE_TOUCH 근접 보너스)")
+ap.add_argument("--eval-timeout", type=float, default=10.0,
+                help="평점 대기 상한(초). 정상 트랙은 속도 8 에서 0.6초면 나온다. 언덕을 "
+                     "못 넘고 골짜기에서 왕복하는 트랙은 테스트가 영영 안 끝나서, 예전 기본값 "
+                     "30초는 실패마다 30초를 버렸다 (2026-09-27 실측: 시도의 60~85%%).")
 ap.add_argument("--port", type=int, default=None,
                 help="특정 인스턴스에 붙는다 (병렬 수집용). "
                      "생략하면 기존처럼 첫 빈 포트를 자동 탐색.")
@@ -153,11 +159,12 @@ with RCTClient.discover(ports=ports) as c, open(args.out, "a", encoding="utf-8")
                                close_budget=close, banked=banked,
                                hills=hills, hill_spread=hill_spread,
                                ramps=ramps, ramp_prob=ramp_prob, steep=steep,
-                               ztol=ZTOL, require=True, hill_kmax=args.hill_kmax)
+                               ztol=ZTOL, require=True, hill_kmax=args.hill_kmax,
+                               drop_to_ground=args.drop_to_ground)
         if seq is None:
             print(f"[{i+1}/{args.n}] 폐곡선 실패 (w={width} d={depth} lift={lift})")
             continue
-        stats = env.evaluate()
+        stats = env.evaluate(timeout=args.eval_timeout)
         if stats is None:
             print(f"[{i+1}/{args.n}] 평점 실패 (조각 {len(seq)}개) - "
                   "열차가 한 바퀴를 못 돌았을 가능성")
@@ -169,7 +176,7 @@ with RCTClient.discover(ports=ports) as c, open(args.out, "a", encoding="utf-8")
             "banked": banked,
             "brake_speed": brake_speed,
             "hills": hills, "hill_spread": hill_spread, "ramps": ramps,
-            "hill_kmax": args.hill_kmax,
+            "hill_kmax": args.hill_kmax, "drop_to_ground": args.drop_to_ground,
             "steep": steep,
             "n_brake": sum(1 for t, _c in seq if t in C.BRAKES),
             "station": 3,

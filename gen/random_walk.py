@@ -60,9 +60,14 @@ WEIGHTS = {
 # 조각별 비용을 매겨봤더니 균일 비용일 때 잘 먹던 가지치기가 풀려 탐색이
 # 몇십 배로 터졌다. 그래서 "맨턴 빼고 한 번, 안 되면 넣고 한 번"으로 간다.
 # 첫 언덕 말고 나머지 언덕이 리프트 꼭대기에서 얼마나 떨어져야 하는지.
-# 첫 언덕은 음의 G 요건 때문에 CREST_DEPTH(8) 아래여야 하지만, 나머지는
-# 열차가 넘을 수만 있으면 된다. 측정용 손잡이다 (scripts/13_offline_ab.py).
-HILL_MARGIN = 2
+#
+# **2 는 틀렸다** (gen11 에서 2 로 풀었다가 2026-09-27 에 8 로 되돌림). 오프라인
+# 설계 길이만 보고 풀었는데, 게임에서는 열차가 마찰로 에너지를 잃어 꼭대기를
+# 못 넘고 골짜기에서 영원히 왕복한다 -> 테스트가 안 끝나 평점이 안 나온다.
+# 실측 (gen13 설정 34개): 최소 여유 2~6 은 통과 2/7, 8 이상은 26/27.
+# 수집기 시도의 60~85% 가 이걸로 버려지고 있었고, 성공 레코드만 남아서
+# 데이터에서는 안 보였다 (여유 2 인 레코드는 5% 뿐 -- 설계에서는 흔하다).
+HILL_MARGIN = 8
 
 PLAIN_TURNS = frozenset((C.TURN_L5, C.TURN_R5, C.TURN_L3, C.TURN_R3))
 
@@ -294,10 +299,10 @@ def _follow(P, s, types, bounds, occupied):
 
 def plan_episode(sim: TrackSimulator, station_end: State, goal: State,
                  bounds: Bounds, lift_pieces=None, wander_steps=None,
-                 close_budget=24, headroom=2, ztol=2, banked=True,
+                 close_budget=24, headroom=8, ztol=2, banked=True,
                  attempts=40, strict_banked=True, time_budget=20.0,
                  station_cells=(), hills=0, hill_spread=0, ramps=0, ramp_prob=0.0,
-                 steep=False, require=False, hill_kmax=None):
+                 steep=False, require=False, hill_kmax=None, drop_to_ground=False):
     """게임 없이 폐곡선 시퀀스 하나를 설계한다. [(조각, 체인), ...] 또는 None.
 
     goal 은 스테이션 첫 조각의 진입점 -- 여기로 정확히 돌아오면 폐곡선이다.
@@ -322,11 +327,17 @@ def plan_episode(sim: TrackSimulator, station_end: State, goal: State,
     ramps: 층을 몇 번까지 바꿀지 (`_ramp`). 한 층이 차면 위아래로 옮겨 같은
     x,y 를 다시 쓴다. 주행 길이가 흥미도의 제일 강한 레버인데 부지 면적이
     그 길이를 막고 있었다 (면적을 키워도 490m 에서 포화).
+    drop_to_ground: 첫 낙하를 스테이션 높이(=지면)까지 다 내려가게 한다 (gen13).
+    평점 공식의 근접 항(SURFACE_TOUCH)은 **지면 높이에 놓인 트랙 칸**을 70칸까지
+    세서 칸당 흥미도 +0.0058 을 준다. 기존에는 첫 낙하가 0~4 덜 내려가서 본체가
+    지면 위에 떠 있을 때가 많았다 (데이터로 확인: 지면 칸 5 -> 40 에 잔차 +0.2).
+    headroom: 워크/꼬리가 올라갈 수 있는 천장 = 리프트 꼭대기 - headroom.
+    2 였는데 8 로 올렸다 (HILL_MARGIN 과 같은 이유 -- 열차가 못 넘는다).
     require: True 면 우든 코스터 요건(gen/requirements.py)을 못 채울 것으로
     예측되는 설계를 버리고 다시 뽑는다. 요건 미달 트랙은 게임이 평점을 절반으로
     깎는다 -- 2026-09-19 까지 데이터의 75% 가 그랬다.
     """
-    from gen.requirements import meets
+    from gen.requirements import clears_hills, meets
     P = planner_for(sim)
     weights = WEIGHTS if banked else WEIGHTS_PLAIN
     deadline = time.monotonic() + time_budget if time_budget else None
@@ -355,7 +366,8 @@ def plan_episode(sim: TrackSimulator, station_end: State, goal: State,
                     max(bounds.z_min, goal.z), min(bounds.z_max, top.z - headroom))
 
         # 3) 첫 낙하. 높이의 대부분을 여기서 속도로 바꾼다.
-        n_drop = max(1, (top.z - goal.z) // 2 - random.randint(0, 2))
+        n_drop = max(1, (top.z - goal.z) // 2
+                     - (0 if drop_to_ground else random.randint(0, 2)))
         drop, s = None, None
         while n_drop >= 1 and s is None:
             drop = _drop(n_drop, steep=steep)
@@ -417,7 +429,7 @@ def plan_episode(sim: TrackSimulator, station_end: State, goal: State,
             if tail is not None:
                 seq = ([(t, True) for t, _ in lift]
                        + [(t, False) for t in drop + head + tail])
-                if require and not meets(seq):
+                if require and not (meets(seq) and clears_hills(seq)):
                     break           # 되감아도 요건은 거의 안 바뀐다 -> 새로 설계
                 return seq
     return None

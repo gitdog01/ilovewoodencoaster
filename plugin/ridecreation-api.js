@@ -247,6 +247,7 @@ function main() {
         ["startRideTest",        params => handleStartRideTest(params)],
         ["getRideStats",         params => handleGetRideStats(params)],
         ["getRideMeasurements",  params => handleGetRideMeasurements(params)],
+        ["getRideVehicles",      params => handleGetRideVehicles(params)],
         ["setRideVehicles",      params => handleSetRideVehicles(params)],
         ["placeTrackPiece",      params => handlePlaceTrackPiece(params)],
         ["getValidNextPieces",   params => handleGetValidNextPieces(params)],
@@ -417,6 +418,25 @@ function main() {
      * highestDropHeight in raw z-steps). Turn counts and shelteredLength are NOT
      * registered on ScRide, hence absent here (env-side static counters cover turns).
      */
+    // 진단용: 라이드의 차량(열차 칸) 상태. 테스트가 안 끝나는 트랙에서 열차가
+    // 어디서 무엇을 하는지(멈춤/왕복/역주행) 보려고 넣었다 (2026-09-27).
+    async function handleGetRideVehicles(params) {
+        const { rideId } = params || {};
+        if (typeof rideId !== "number") throw new Error("Missing or invalid parameter: rideId");
+        const ride = map.getRide(rideId);
+        const cars = map.getAllEntities("car").filter(c => c.ride === rideId);
+        return {
+            status: ride ? ride.status : null,
+            lifecycleFlags: ride ? ride.lifecycleFlags : null,
+            cars: cars.map(c => ({
+                id: c.id, x: c.x, y: c.y, z: c.z, velocity: c.velocity,
+                status: c.status, trackProgress: c.trackProgress,
+                currentStation: c.currentStation, isCrashed: c.isCrashed,
+                trackLocation: c.trackLocation,
+            })),
+        };
+    }
+
     async function handleGetRideMeasurements(params) {
         const { rideId } = params || {};
         if (typeof rideId !== "number") throw new Error("Missing or invalid parameter: rideId");

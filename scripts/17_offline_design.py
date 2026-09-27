@@ -24,7 +24,7 @@ sys.path.insert(0, REPO)
 os.chdir(REPO)
 
 from gen.random_walk import plan_episode                 # noqa: E402
-from gen.requirements import predict                     # noqa: E402
+from gen.requirements import _PIECES, predict            # noqa: E402
 from geom.planner import State                           # noqa: E402
 from geom.simulator import Bounds, TrackSimulator, station_tiles   # noqa: E402
 
@@ -40,6 +40,7 @@ VARIANTS = {
     "s0tight": {"hill_kmax": 0, "hill_spread": 2},
     "s1tight": {"hill_kmax": 1, "hill_spread": 2},
     "s0zero": {"hill_kmax": 0, "hill_spread": 0},
+    "s0zeroG": {"hill_kmax": 0, "hill_spread": 0, "drop_to_ground": True},
 }
 
 
@@ -54,6 +55,15 @@ def sample(rng, hills_rng):
     hills = rng.randint(*hills_rng)
     return dict(width=width, depth=depth, lift=lift, wander=wander, close=close,
                 banked=banked, hills=hills)
+
+
+def ground(seq):
+    """지면(스테이션 높이)에서 시작하는 조각 수. 평점의 SURFACE_TOUCH 근사."""
+    z, g = 0, 0
+    for t, _c in seq:
+        g += z == 0
+        z += _PIECES[t]["dz"]
+    return g
 
 
 def design(sim, cfg, extra, seed):
@@ -95,7 +105,7 @@ def main():
             res[v].append((seq, dt))
     print(f"n={args.n} hills={args.hills}")
     print(f"{'variant':<8} {'성공':>6} {'낙하 중앙':>8} {'낙하>=9':>8} {'최고낙하':>8} "
-          f"{'길이 중앙':>9} {'조각 중앙':>9} {'설계초':>7}")
+          f"{'길이 중앙':>9} {'조각 중앙':>9} {'지면칸':>6} {'설계초':>7}")
     for v in names:
         ok = [s for s, _ in res[v] if s]
         pr = [predict(s) for s in ok]
@@ -105,6 +115,7 @@ def main():
               f"{st.median(p['drop_height'] for p in pr):8.1f} "
               f"{st.median(p['length'] for p in pr):9.0f} "
               f"{st.median(len(s) for s in ok):9.0f} "
+              f"{st.median(ground(s) for s in ok):6.0f} "
               f"{st.mean(dt for _, dt in res[v]):7.1f}")
 
 

@@ -87,3 +87,26 @@ def failures(seq):
 
 def meets(seq):
     return not failures(seq)
+
+
+# 리프트 뒤 모든 꼭대기가 리프트 꼭대기보다 이만큼은 낮아야 열차가 넘는다.
+# 실측 (2026-09-27, gen13 설정 34개): 최소 여유 2~6 통과 2/7, 8 이상 26/27.
+# 못 넘으면 열차가 골짜기에서 왕복해 테스트가 안 끝난다 (평점 없음).
+MIN_CREST_MARGIN = 8
+
+
+def crest_margin(seq):
+    """리프트 꼭대기 - (리프트 뒤 가장 높은 꼭대기). 꼭대기가 없으면 큰 값."""
+    z, top, last_chain, prof = 0, None, -1, []
+    for i, (t, chain) in enumerate(seq):
+        z += _PIECES[t]["dz"]
+        if chain:
+            top, last_chain = z, i
+        prof.append(z)
+    peaks = [prof[i] for i in range(last_chain + 2, len(prof) - 1)
+             if prof[i] >= prof[i - 1] and prof[i] > prof[i + 1]]
+    return min((top - p for p in peaks), default=99) if top is not None else 99
+
+
+def clears_hills(seq):
+    return crest_margin(seq) >= MIN_CREST_MARGIN

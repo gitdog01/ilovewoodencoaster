@@ -81,7 +81,7 @@ def main():
             continue
         ours_all.append(m)
         g = (r.get("meta") or {}).get("gen_label", "")
-        if g in ("gen6", "gen7", "gen8", "gen9", "gen10", "gen11", "gen12", "gen13"):
+        if g in ("gen6", "gen7", "gen8", "gen9", "gen10", "gen11", "gen12", "gen13", "gen14"):
             ours_new.append(m)
     top = sorted(ours_all, key=lambda m: -m["excitement"])[:200]
 

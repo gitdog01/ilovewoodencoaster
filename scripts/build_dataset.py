@@ -84,10 +84,15 @@ GENERATIONS = {
     # gen13 (2026-09-27): 평점 공식 원문을 보고 낙하 **횟수**(9회 상한)를 노린다.
     # 언덕 9~14개, 첫 언덕 뒤로는 높이 2 둔덕을 연달아 붙인다.
     "run13_": ("gen13", "", "연속 둔덕으로 낙하 9회 (공식 기반)"),
+    # gen14 (2026-09-27): 언덕 여유 2 -> 8 (HILL_MARGIN, headroom, clears_hills).
+    # gen11~13 은 열차가 못 넘는 언덕을 설계해서 시도의 60~85% 가 평점 없이 버려졌다.
+    # 성공한 것만 남았으니 레코드 자체는 유효하다 -- 수집 효율과 분포만 치우쳤다.
+    "run14_":  ("gen14", "", "gen13 + 언덕 여유 8 + 지면까지 낙하"),
+    "run14b_": ("gen14", "", "gen14 대조군: gen11 언덕 설정 + 여유 8"),
 }
 # 커밋 -> 세대. 레코드에 meta.gen 이 있을 때 세대를 붙이는 데 쓴다.
 COMMIT_TO_GEN = {c: g for g, c, _ in GENERATIONS.values() if c}
-GEN_ORDER = ["gen1", "gen2", "gen3", "gen4", "gen5", "gen6", "gen7", "gen8", "gen9", "gen10", "gen11", "gen12", "gen13"]
+GEN_ORDER = ["gen1", "gen2", "gen3", "gen4", "gen5", "gen6", "gen7", "gen8", "gen9", "gen10", "gen11", "gen12", "gen13", "gen14"]
 
 
 def generation_of(record, filename):
