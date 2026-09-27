@@ -40,16 +40,21 @@ ap.add_argument("--dropout", type=float, default=0.1)
 ap.add_argument("--seed", type=int, default=0)
 ap.add_argument("--min-gen", default="gen2",
                 help="이 세대 미만은 버린다. 전부 쓰려면 빈 문자열.")
+ap.add_argument("--block-size", type=int, default=128,
+                help="최대 토큰 길이. 이보다 긴 트랙은 학습에서 **빠진다** (ds.skipped). "
+                     "gen14 는 1.9%%, 스톡 우든 코스터(중앙 127조각)는 거의 전부라서 "
+                     "스톡으로 파인튜닝하려면 256 으로 올릴 것 (2026-09-27).")
 args = ap.parse_args()
 
 torch.manual_seed(args.seed)
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 tok = TrackTokenizer()
-ds = TrackDataset(args.data, tok, min_gen=args.min_gen or None)
+ds = TrackDataset(args.data, tok, min_gen=args.min_gen or None,
+                  max_len=args.block_size)
 print(ds, f"device={device}")
 
-cfg = GPTConfig(vocab_size=len(tok), block_size=128, n_layer=args.n_layer,
+cfg = GPTConfig(vocab_size=len(tok), block_size=args.block_size, n_layer=args.n_layer,
                 n_head=args.n_head, n_embd=args.n_embd, dropout=args.dropout)
 model = GPT(cfg).to(device)
 print(f"파라미터 {model.n_params()/1e6:.2f}M")
