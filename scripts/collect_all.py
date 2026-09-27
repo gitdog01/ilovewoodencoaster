@@ -41,6 +41,8 @@ def main():
                     help="시드 시작값. 이미 쓴 시드와 겹치면 같은 트랙이 또 나온다.")
     ap.add_argument("--tag", default="part", help="출력 파일 접두사")
     ap.add_argument("--speed", type=int, default=8)
+    ap.add_argument("--extra", default="",
+                    help="03_collect.py 에 그대로 넘길 인자 (예: \"--hills 9-14 --hill-spread 0\")")
     args = ap.parse_args()
 
     os.makedirs(os.path.join(REPO, "data"), exist_ok=True)
@@ -53,7 +55,7 @@ def main():
         # (실제로 멎은 수집기를 진단하려다 로그가 비어 있어서 못 썼다).
         cmd = [sys.executable, "-u", COLLECT, "--port", str(port),
                "--seed", str(args.seed_base + i), "--n", str(args.each),
-               "--speed", str(args.speed), "--out", out]
+               "--speed", str(args.speed), "--out", out] + args.extra.split()
         # 출력은 각자 로그 파일로. 12개가 한 콘솔에 섞이면 못 읽는다.
         log = open(os.path.join(REPO, "data", f"{args.tag}_{port}.log"), "w",
                    encoding="utf-8", errors="replace")

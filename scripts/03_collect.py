@@ -32,6 +32,12 @@ ap.add_argument("--speed", type=int, default=8,
 ap.add_argument("--steep-prob", type=float, default=0.0,
                 help="에피소드를 60도 낙하/언덕으로 만들 확률 (gen12). "
                      "같은 높이를 절반 이하의 타일로 처리한다.")
+ap.add_argument("--hills", default="4-9",
+                help="언덕 수 범위 (gen11 4-9, gen13 9-14)")
+ap.add_argument("--hill-spread", type=int, default=6,
+                help="언덕 사이 워크 길이 상한. 0 이면 둔덕을 연달아 붙인다 (gen13)")
+ap.add_argument("--hill-kmax", type=int, default=None,
+                help="첫 언덕 말고 나머지 언덕 크기 상한. 0 이면 높이 2 둔덕 (gen13)")
 ap.add_argument("--port", type=int, default=None,
                 help="특정 인스턴스에 붙는다 (병렬 수집용). "
                      "생략하면 기존처럼 첫 빈 포트를 자동 탐색.")
@@ -112,8 +118,14 @@ def sample_config():
     # 언덕을 본체 전체에 흩어 사람 코스터의 "언덕 여러 개" 골격에 가깝게 한다.
     # 오프라인 스윕: 5~9 x 간격 6 에서 낙하 중앙 3 -> 6, 길이 424 -> 493.
     # 더 늘려도(8~14, 12~20) 안 늘어난다 -- 부지 공간이 한계다.
-    hills = random.randint(4, 9)
-    hill_spread = 6
+    #
+    # gen13 (2026-09-27): 평점 공식 원문(OpenRCT2 RideRatings.cpp)을 보니 낙하 항은
+    # **횟수**를 9회까지 센다 (1회 +0.069). 사람은 9회, 우리는 4회였다. 작은 둔덕을
+    # 연달아 붙이면(--hills 9-14 --hill-spread 0 --hill-kmax 0) 오프라인 설계에서
+    # 낙하 중앙 5 -> 9 가 된다 (scripts/17_offline_design.py).
+    lo, hi = (int(v) for v in args.hills.split("-"))
+    hills = random.randint(lo, hi)
+    hill_spread = args.hill_spread
     # 층 바꾸기(_ramp)는 **효과가 없어서 껐다** (gen9 -> gen10). 설계 200개
     # 짝지어 비교하니 길이 중앙 556 vs 556 으로 차이가 없다. 코드와 손잡이는
     # 남겨뒀다. 층 쌓기를 실제로 푼 건 램프가 아니라 ztol 이다 (아래).
@@ -141,7 +153,7 @@ with RCTClient.discover(ports=ports) as c, open(args.out, "a", encoding="utf-8")
                                close_budget=close, banked=banked,
                                hills=hills, hill_spread=hill_spread,
                                ramps=ramps, ramp_prob=ramp_prob, steep=steep,
-                               ztol=ZTOL, require=True)
+                               ztol=ZTOL, require=True, hill_kmax=args.hill_kmax)
         if seq is None:
             print(f"[{i+1}/{args.n}] 폐곡선 실패 (w={width} d={depth} lift={lift})")
             continue
@@ -157,6 +169,7 @@ with RCTClient.discover(ports=ports) as c, open(args.out, "a", encoding="utf-8")
             "banked": banked,
             "brake_speed": brake_speed,
             "hills": hills, "hill_spread": hill_spread, "ramps": ramps,
+            "hill_kmax": args.hill_kmax,
             "steep": steep,
             "n_brake": sum(1 for t, _c in seq if t in C.BRAKES),
             "station": 3,

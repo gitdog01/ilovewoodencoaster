@@ -169,7 +169,7 @@ def _try_ramp(P, s, bounds, occ, goal, reserve, top_z, floor_z):
 
 def _add_hills(P, s, n_hills, top_z, bounds, occupied, weights, goal,
                reserve, spread=0, floor_z=None, ramps=0, ramp_prob=0.0,
-               steep=False):
+               steep=False, hill_kmax=None):
     """s 에서 언덕을 최대 n_hills 개 붙인다. (조각열, 끝상태, 점유) 를 돌려준다.
 
     언덕 꼭대기는 리프트 꼭대기보다 CREST_DEPTH 이상 낮아야 속도가 남아서
@@ -183,6 +183,13 @@ def _add_hills(P, s, n_hills, top_z, bounds, occupied, weights, goal,
 
     goal/reserve: 사이 워크가 스테이션에서 너무 멀어지지 않게 한다. 언덕 하나가
     2k+4 조각이라, 이걸 안 걸면 A* 가 닫을 여지를 언덕이 먹어버린다.
+
+    hill_kmax: 첫 언덕 말고 나머지 언덕의 크기 상한 (gen13, 2026-09-27). None 이면
+    예전처럼 들어가는 제일 큰 언덕부터 시도한다. 정수면 0~hill_kmax 에서 무작위로
+    고르고 (k=0 은 높이 2짜리 에어타임 둔덕), 안 들어가면 작은 쪽으로 내려간다.
+    이유: 평점 공식(OpenRCT2 RideRatings.cpp)의 낙하 항은 낙하의 **횟수**를 9회까지
+    세고 크기는 최고 낙하 하나만 본다. 큰 언덕은 부지를 먹어 횟수를 줄인다.
+    에어타임/음의 G 도 빠른 속도로 낮은 꼭대기를 넘을 때 난다.
     """
     from gen.requirements import CREST_DEPTH
     if floor_z is None:
@@ -221,7 +228,11 @@ def _add_hills(P, s, n_hills, top_z, bounds, occupied, weights, goal,
             # 대역을 CREST_DEPTH 로 묶어두면 층이 2~3개밖에 안 나온다.
             margin = CREST_DEPTH if i == 1 else HILL_MARGIN
             kmax = (top_z - s0.z - margin - 2) // 2
-            for k in range(kmax, 0, -1):
+            if hill_kmax is not None and i > 1:
+                ks = list(range(min(kmax, random.randint(0, hill_kmax)), -1, -1))
+            else:
+                ks = list(range(kmax, 0, -1))
+            for k in ks:
                 hill = _hill(k, flat=random.randint(0, 1), steep=steep)
                 s1, cells = _follow(P, s0, hill, bounds, occ0)
                 if s1 is None:
@@ -286,7 +297,7 @@ def plan_episode(sim: TrackSimulator, station_end: State, goal: State,
                  close_budget=24, headroom=2, ztol=2, banked=True,
                  attempts=40, strict_banked=True, time_budget=20.0,
                  station_cells=(), hills=0, hill_spread=0, ramps=0, ramp_prob=0.0,
-                 steep=False, require=False):
+                 steep=False, require=False, hill_kmax=None):
     """게임 없이 폐곡선 시퀀스 하나를 설계한다. [(조각, 체인), ...] 또는 None.
 
     goal 은 스테이션 첫 조각의 진입점 -- 여기로 정확히 돌아오면 폐곡선이다.
@@ -368,7 +379,8 @@ def plan_episode(sim: TrackSimulator, station_end: State, goal: State,
             hill_seq, s, occ0 = _add_hills(P, s, hills, top.z, rb, occ0, weights,
                                            goal, close_budget, spread=hill_spread,
                                            floor_z=goal.z, ramps=ramps,
-                                           ramp_prob=ramp_prob, steep=steep)
+                                           ramp_prob=ramp_prob, steep=steep,
+                                           hill_kmax=hill_kmax)
         drop = drop + hill_seq
 
         # 4) 무작위 워크로 본체 모양을 만든다.

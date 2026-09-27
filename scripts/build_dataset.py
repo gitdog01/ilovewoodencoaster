@@ -79,10 +79,15 @@ GENERATIONS = {
     # gen12 (2026-09-20): 60도 어휘. geometry.json 에 60도 계열 6종을 다단계로
     # 추출해 넣고(14_extract_slopes.py), 낙하/언덕을 60도로 만들 수 있게 했다.
     "run12_": ("gen12", "", "60도 낙하/언덕"),
+    # 2026-09-27: gen11 설정 그대로 추가 수집 (gen6+ 데이터가 4,655개뿐이라).
+    "run11c_": ("gen11", "", "gen11 추가 수집 (시드 2000~)"),
+    # gen13 (2026-09-27): 평점 공식 원문을 보고 낙하 **횟수**(9회 상한)를 노린다.
+    # 언덕 9~14개, 첫 언덕 뒤로는 높이 2 둔덕을 연달아 붙인다.
+    "run13_": ("gen13", "", "연속 둔덕으로 낙하 9회 (공식 기반)"),
 }
 # 커밋 -> 세대. 레코드에 meta.gen 이 있을 때 세대를 붙이는 데 쓴다.
 COMMIT_TO_GEN = {c: g for g, c, _ in GENERATIONS.values() if c}
-GEN_ORDER = ["gen1", "gen2", "gen3", "gen4", "gen5", "gen6", "gen7", "gen8", "gen9", "gen10", "gen11", "gen12"]
+GEN_ORDER = ["gen1", "gen2", "gen3", "gen4", "gen5", "gen6", "gen7", "gen8", "gen9", "gen10", "gen11", "gen12", "gen13"]
 
 
 def generation_of(record, filename):
