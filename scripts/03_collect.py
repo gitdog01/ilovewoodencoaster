@@ -183,7 +183,8 @@ with RCTClient.discover(ports=ports) as c, open(args.out, "a", encoding="utf-8")
             "bounds": {"width": width, "depth": depth, "height": args.height},
             "lift_pieces": lift,
             "banked": banked,
-            "brake_speed": brake_speed,
+            # 실제로 쓴 값. generate_episode 가 브레이크 뒤 언덕에 맞춰 올릴 수 있다.
+            "brake_speed": env.brake_speed,
             "hills": hills, "hill_spread": hill_spread, "ramps": ramps,
             "hill_kmax": args.hill_kmax, "drop_to_ground": args.drop_to_ground,
             "steep": steep,

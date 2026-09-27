@@ -466,6 +466,10 @@ def generate_episode(env: WoodenCoasterEnv, sim: TrackSimulator, bounds: Bounds,
                 trace.append(("too_long", 0, len(seq)))
             continue
 
+        # 브레이크 뒤 언덕을 넘을 만큼 브레이크 속도를 올린다 (gen14, 2026-09-27).
+        # 안 그러면 열차가 골짜기에서 왕복해 평점이 안 나온다.
+        from gen.requirements import brake_speed_needed
+        env.brake_speed = max(env.brake_speed, brake_speed_needed(seq))
         placed, complete = env.build(seq)
         if complete:
             return seq[:placed]

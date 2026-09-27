@@ -110,3 +110,40 @@ def crest_margin(seq):
 
 def clears_hills(seq):
     return crest_margin(seq) >= MIN_CREST_MARGIN
+
+
+BRAKE_IDS = (99, 216)       # BRAKE, BLOCK_BRAKE (rct/constants.py)
+MAX_BRAKE_SPEED = 39        # 40 이상은 게임이 배치를 거부한다
+
+
+def brake_speed_needed(seq):
+    """브레이크 뒤 언덕을 넘는 데 필요한 최소 브레이크 속도. 브레이크가 없으면 0.
+
+    브레이크를 지나면 열차 속도가 brake_speed 로 깎이는데, 그 뒤에 브레이크보다
+    높이 올라가는 구간이 있으면 못 넘고 골짜기에서 왕복한다 (평점 없음).
+    실측 (gen14, 2026-09-27, 브레이크 뒤 최대 상승 x 속도대):
+        속도 8~15 : 상승 0~2 통과 71/74, 4 는 8/12, 6 이상은 10/63
+        속도 16~23: 상승 4 는 10/11, 6 은 22/31, 8 은 17/35
+        속도 24~31: 상승 6 은 22/27, 8 은 20/31
+    => 상승 h 를 넘으려면 대략 4h + 4. 설계를 버리지 말고 속도를 올린다 --
+    흥미도 공식에 브레이크 항이 없어서 손해가 없다.
+
+    **효과는 약하다** (게임 검증): 실패했던 설계 24개를 속도만 올려 다시 지으니
+    5개만 통과했다 (0 -> 5/24). 상관은 강한데 인과는 약하다 -- 브레이크 뒤에
+    크게 올라가는 설계는 속도와 무관하게 그 지점의 에너지가 모자란 경우가 많다.
+    필요 속도가 36~39 로 나오는 설계는 전부 여전히 실패했다.
+    """
+    z, prof, brakes = 0, [], []
+    for i, (t, _c) in enumerate(seq):
+        if t in BRAKE_IDS:
+            brakes.append((i, z))
+        z += _PIECES[t]["dz"]
+        prof.append(z)
+    need = 0
+    for k, (bi, bz) in enumerate(brakes):
+        end = brakes[k + 1][0] if k + 1 < len(brakes) else len(prof)
+        seg = prof[bi + 1:end]
+        if seg:
+            need = max(need, 4 * max(0, max(seg) - bz) + 4)
+    return min(need, MAX_BRAKE_SPEED)
+
