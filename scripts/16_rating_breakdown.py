@@ -68,10 +68,40 @@ def summarize(label, rows):
     return label, len(rows), out
 
 
+def load_parts(tag):
+    """수집 part 파일(data/<tag>_*.jsonl)에서 바로 읽는다. dataset 재빌드 전 새 세대용."""
+    import glob
+    out = []
+    for f in glob.glob(os.path.join(REPO, "data", f"{tag}_*.jsonl")):
+        if f.endswith(".fail.jsonl"):
+            continue
+        for l in open(f, encoding="utf-8"):
+            m = json.loads(l)["stats"]
+            if gap.meets(m) and m["intensity"] < 10:
+                out.append(m)
+    return out
+
+
 def main():
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--parts", default="",
+                    help="쉼표로 구분한 part 태그 (예: run14,run14b). 주면 dataset.jsonl "
+                         "대신 사람 vs 각 태그를 비교한다.")
+    args = ap.parse_args()
     stock = [json.loads(l)["flat"] for l in
              open(os.path.join(REPO, "data", "stock_on_flat.jsonl"), encoding="utf-8")]
     stock = [m for m in stock if m and gap.meets(m) and m["intensity"] < 10]
+
+    if args.parts:
+        cols = [summarize("사람 (빈 평지)", stock)]
+        cols += [summarize(t, load_parts(t)) for t in args.parts.split(",")]
+        keys = list(cols[0][2])
+        print(f"{'항':<14}" + "".join(f"{c[0]:>16}" for c in cols))
+        print(f"{'n':<14}" + "".join(f"{c[1]:>16}" for c in cols))
+        for k in keys:
+            print(f"{k:<14}" + "".join(f"{c[2][k]:>16.2f}" for c in cols))
+        return
 
     ours_all, ours_new = [], []
     for l in open(os.path.join(REPO, "data", "dataset.jsonl"), encoding="utf-8"):
