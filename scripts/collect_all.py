@@ -57,7 +57,9 @@ def main():
                "--seed", str(args.seed_base + i), "--n", str(args.each),
                "--speed", str(args.speed), "--out", out] + args.extra.split()
         # 출력은 각자 로그 파일로. 12개가 한 콘솔에 섞이면 못 읽는다.
-        log = open(os.path.join(REPO, "data", f"{args.tag}_{port}.log"), "w",
+        # "a": 덮어쓰면 재시작할 때 실패 기록이 사라진다. 2026-09-27 에 평점 실패가
+        # 시도의 60~85% 였는데 로그가 덮여서 몇 주 동안 안 보였다.
+        log = open(os.path.join(REPO, "data", f"{args.tag}_{port}.log"), "a",
                    encoding="utf-8", errors="replace")
         procs.append((port, out, subprocess.Popen(cmd, stdout=log, stderr=log), log))
         print(f"[collect] 포트 {port} 시작 -> {os.path.basename(out)}")
