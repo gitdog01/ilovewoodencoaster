@@ -176,8 +176,7 @@ with RCTClient.discover(ports=ports) as c, open(args.out, "a", encoding="utf-8")
                                      "lift_pieces": lift, "banked": banked,
                                      "measure": c.measurements(env.ride_id),
                                      "meta": {"gen": GEN, "seed": args.seed}},
-                                    ensure_ascii=False) + "
-")
+                                    ensure_ascii=False) + chr(10))
             continue
         fp.write(json.dumps({
             "sequence": seq, "stats": stats,
