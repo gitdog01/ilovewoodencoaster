@@ -119,8 +119,13 @@ def main():
     ap.add_argument("--keep-dupes", action="store_true")
     args = ap.parse_args()
 
+    # 수집 part 파일만 합친다. 같은 폴더에 있는 다른 jsonl 은 학습 데이터가 아니다:
+    #   *.fail.jsonl       평점 못 받은 설계 (진단용, 03_collect.py)
+    #   stock_on_flat.jsonl 스톡 디자인을 빈 평지에 지은 기준선 (15_stock_on_flat.py)
     files = sorted(f for f in glob.glob(os.path.join(args.data, "*.jsonl"))
-                   if os.path.basename(f) != os.path.basename(args.out))
+                   if os.path.basename(f) != os.path.basename(args.out)
+                   and not f.endswith(".fail.jsonl")
+                   and os.path.basename(f) != "stock_on_flat.jsonl")
     if not files:
         sys.exit(f"합칠 파일이 없습니다: {args.data}/*.jsonl")
 

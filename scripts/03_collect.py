@@ -168,6 +168,16 @@ with RCTClient.discover(ports=ports) as c, open(args.out, "a", encoding="utf-8")
         if stats is None:
             print(f"[{i+1}/{args.n}] 평점 실패 (조각 {len(seq)}개) - "
                   "열차가 한 바퀴를 못 돌았을 가능성")
+            # 실패한 설계도 남긴다 (진단용, 학습 데이터 아님). 실패가 레코드를 안
+            # 남겨서 gen11~13 의 골짜기 왕복 버그가 몇 주 동안 안 보였다.
+            with open(args.out.replace(".jsonl", ".fail.jsonl"), "a",
+                      encoding="utf-8") as ff:
+                ff.write(json.dumps({"sequence": seq, "brake_speed": brake_speed,
+                                     "lift_pieces": lift, "banked": banked,
+                                     "measure": c.measurements(env.ride_id),
+                                     "meta": {"gen": GEN, "seed": args.seed}},
+                                    ensure_ascii=False) + "
+")
             continue
         fp.write(json.dumps({
             "sequence": seq, "stats": stats,
