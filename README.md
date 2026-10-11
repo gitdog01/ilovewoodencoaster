@@ -1,166 +1,140 @@
-# ilovewoodencoaster
+# ilovewoodencoaster 🎢
 
-OpenRCT2 우든 롤러코스터 트랙을 생성하는 작은 언어모델(sLLM)과 플러그인.
+**OpenRCT2 안에서 버튼 하나로 우든 롤러코스터를 설계해 주는 작은 트랜스포머 + 플러그인.**
 
-**목표: 원하는 크기의 부지에서, 격렬도가 너무 높지 않게 하면서, 흥미도를 최대로.**
-지표 4개를 다 지정받는 게 아니라 **부지 크기만 주고 나머지는 제약 하 최적화**다
-(격렬도가 10을 넘으면 손님이 안 탄다).
+> 원하는 크기의 부지에서, 격렬도가 너무 높지 않게 하면서, 흥미도를 최대로.
 
-![1단계: 손으로 짠 첫 폐곡선 코스터](%EC%B2%AB_%EC%99%84%EC%84%B1_.png)
+[![게임 안에서 생성기를 돌리는 데모](docs/media/hero.webp)](docs/media/demo.mp4)
 
-*1단계 산출물 — `scripts/02_hello_coaster.py` 가 지은 첫 폐곡선 코스터.
-흥미 0.27 / 격렬 0.30 / 멀미 0.18. 여기서 시작했다.*
+*게임 안 생성기 창 → LM 후보 16개 → A\* 로 폐곡선 → 게임이 채점 → 최고 후보를 남기고 실제로 달린다.
+자막이 들어간 전체 영상(50초)은 [docs/media/demo.mp4](docs/media/demo.mp4).*
 
-<video src="https://raw.githubusercontent.com/gitdog01/ilovewoodencoaster/main/1%EB%8B%A8%EA%B3%84%EC%98%81%EC%83%81.mp4" controls muted loop width="640"></video>
+<video src="https://github.com/gitdog01/ilovewoodencoaster/raw/main/docs/media/demo.mp4" controls muted width="720"></video>
 
-*1단계 실행 영상 (약 6초) — 재생이 안 되면 [1단계영상.mp4](1%EB%8B%A8%EA%B3%84%EC%98%81%EC%83%81.mp4) 를 직접 열면 된다.*
+---
 
-## 어떻게 동작하는가
+## 한눈에 보기
 
-게임을 라벨러로 쓴다. 절차적 생성기로 유효한 트랙을 대량으로 만들고 OpenRCT2 가
-흥미도/격렬도/멀미도를 매기게 한 뒤, 그 (조건, 시퀀스, 평점) 쌍으로 조건부 생성
-모델을 학습한다.
+| | |
+|---|---|
+| ![게임 안 생성기 창](docs/media/generator_ui.png) | ![게임이 매긴 평점](docs/media/ratings_window.png) |
+| **생성기 창** — 지도 메뉴 → "우든 코스터 생성기". 부지 크기와 목표를 넣고 `트랙 생성` | **게임이 매긴 평점** — 위 영상의 트랙. 흥미 5.56 / 격렬 7.22 / 멀미 3.87, 509m, 낙하 3회 |
 
+![모델이 지은 코스터 전경](docs/media/coaster_overview.png)
+
+*위 데모에서 모델이 지은 코스터 (65조각, 28×24 부지, 후보 13개 중 1등). 리프트 → 첫 낙하 → 연속 둔덕 → 헬릭스 → 스테이션.*
+
+## 어떻게 동작하나
+
+```mermaid
+flowchart LR
+    U["🧑 게임 UI<br/>부지 크기 · 목표"] --> D["08_daemon.py<br/>(파이썬, 폴링)"]
+    D --> LM["GPT 4.8M<br/>조건부 생성"]
+    LM -->|"매 스텝 마스킹<br/>부지 · 자기충돌"| LM
+    LM --> AS["A*<br/>스테이션까지 정확히 닫기"]
+    AS -->|"후보 N개"| G["OpenRCT2<br/>실제로 짓고 채점"]
+    G -->|"격렬도 ≤ 10 중<br/>흥미도 최고"| R["🎢 완성품을 공원에 남김"]
 ```
-[BOS][exc=8][int=6][cost=2][width=12][station=4][SEP] <트랙 조각들> [EOS]
-```
 
-추론은 네 단계다.
+1. **게임을 라벨러로 쓴다.** 절차적 생성기로 트랙을 대량으로 만들고 OpenRCT2 가 흥미/격렬/멀미를 매긴다.
+   지금까지 **150,823개**. 사람 디자인은 수천 개뿐이라 이 방법이 아니면 데이터가 없다.
+2. **조건부 생성 (Decision Transformer 방식).** 게임이 매긴 평점과 부지 크기를 프리픽스 토큰으로 붙여 학습한다.
+   추론 때는 원하는 값을 같은 자리에 넣는다.
+3. **기하는 학습시키지 않는다.** 부지 이탈·자기충돌은 매 스텝 시뮬레이터로 마스킹하고,
+   폐곡선(x, y, z, 방향, 경사, 뱅크 6개 일치)은 A\* 가 닫는다.
+4. **best-of-N.** 후보를 여러 개 지어 보고 "격렬도 10 이하 중 흥미도 최고"를 고른다.
 
-1. **LM 이 조건부로 후보를 뽑는다** (`model/gpt.py`)
-2. **constrained decoding 이 매 스텝 불가능한 조각을 마스킹한다** (`model/constrain.py`)
-   — 조각 연결 규칙과 부지 경계는 학습으로 안 지켜진다. 기하로 강제해야 한다.
-3. **A\* 가 스테이션까지 정확히 닫는다** (`geom/planner.py`, `model/hybrid.py`)
-   — 폐곡선은 (x, y, z, 방향, 경사, 뱅크) 6개가 전부 일치해야 해서 샘플링으로는 안 나온다.
-4. **게임이 채점하고 best-of-N 으로 고른다** (`model/bestof.py`)
+모델과 데이터가 어떻게 만들어지고 어떻게 나아지고 있는지는 **[docs/TRAINING.md](docs/TRAINING.md)** 에 그림과 함께 정리했다.
 
-## 지금까지의 결과
+## 지금 어디까지 왔나
 
-| 문제 | 전 | 후 | 어디서 고쳤나 |
-|---|---|---|---|
-| 부지 준수 | 12~20% | **100%** | `model/constrain.py` |
-| 폐곡선 완성 | 0% | **100%** | `model/hybrid.py` (A\* 마무리) |
-| 게임의 배치 거부 | 16.7% | **4.2%** | 실측 footprint + 입구/출구 예약 + `plan_safe` |
-| 트랙 하나당 시간 | 33초 | **5~10초** | 설계를 파이썬에서 끝내고 게임 왕복 1회 |
+![생성기 세대별 흥미도](docs/media/fig_gen_progress.png)
 
-- **데이터 140,868개** (`data/dataset.jsonl`, 인스턴스 25개 병렬로 시간당 약 9,300개)
-- **모델 4.79M 파라미터**, val 0.6365, RTX 5070 에서 **1.2분** 학습
-- **게임 종단 검증**: 요청 흥미/격렬/좌우G `2.5/2.0/1.2` -> 실측 `1.90/2.10/1.15`,
-  `5.5/8.0/3.0` -> `5.02/7.05/2.92`. 요청한 목표값을 실제로 맞춘다.
+| 지표 | 처음 | 지금 |
+|---|---|---|
+| 폐곡선 완성 (LM 단독 → A\* 마무리) | 0% | **100%** |
+| 부지 준수 (constrained decoding) | 12~20% | **100%** |
+| 게임의 배치 거부 | 16.7% | **4.2%** |
+| 쓸 만한 트랙 비율 (우든 요건 + 격렬도 ≤ 10) | 16~23% (gen2~5) | **84~95%** (gen6+) |
+| 흥미도 중앙 / 상위 10% | 5.13 / 5.37 (gen2) | **5.51 / 5.93** (gen14) |
+| 흥미도 최고 | 5.92 | **6.43** |
+| 사람 디자인 (같은 빈 평지에서 실측) | | 중앙 6.35 / 최고 7.44 |
 
-### 아직 사람한테 밀린다 (이게 진짜 병목이다)
+가장 최근 도약(gen13~14)은 **OpenRCT2 평점 공식 원문을 읽고** 낙하 횟수와 에어타임을 늘리도록
+생성기를 바꾼 결과다. 세대별 기록과 되돌린 시도들은 **[docs/DEVLOG.md](docs/DEVLOG.md)**.
 
-RCT2 스톡 우든 코스터 30개를 뜯어 우리 데이터와 비교한 결과:
+## 빠른 시작
 
-| | 흥미도 중앙 | 격렬도 중앙 | 조각 수 중앙 |
-|---|---|---|---|
-| **사람 (스톡 30개)** | **7.90** | 4.65 | **127** |
-| 우리 생성기 (140,868개) | 2.40 | 3.17 | 47 |
-
-사람은 **흥미도가 더 높으면서 격렬도는 더 낮다.** 트레이드오프 곡선 위에 있는 게
-아니라 그냥 밀린다 (우리 최대 6.00 < 사람 중앙 7.90). 제일 눈에 띄는 차이는
-**조각 수 47 vs 127** 이고, 그 다음이 어휘다 — 생성기가 쓰는 조각 21종은 스톡
-코스터 조각의 **53.5%** 밖에 못 덮는다 (60도 경사 14.7%, 대각선 11.9% 가 통째로 빠져 있다).
+**필요한 것**: OpenRCT2 0.5.0+ (quickjs-ng 스크립팅), RCT2 원본 에셋, Python 3.10+, (학습/추론에) PyTorch + NVIDIA GPU
 
 ```bash
-python scripts/10_vocab_coverage.py   # 이 커버리지 분석을 다시 돌린다
+pip install -r requirements.txt
 ```
 
-## 진행 상황
+1. **플러그인 설치** — `plugin/ridecreation-api.js` 를 `Documents/OpenRCT2/plugin/` 에 복사.
+   [`markusklock/openrct2-ridecreation-api`](https://github.com/markusklock/openrct2-ridecreation-api) 에
+   이 프로젝트의 패치(포트 고정, 실측용 엔드포인트, 생성기 UI)를 얹은 정본이다. 원본으로는 동작하지 않는다.
+2. **게임 실행** — `openrct2.com` 으로 실행하고 빈 평지 샌드박스 공원을 연다 (플러그인은 공원 로드 후 시작된다).
+3. **데몬 실행**
 
-- [x] 0단계 — 플러그인 설치, 연결 확인
-- [x] 1단계 — 손으로 짠 코스터 하나 짓고 평점 받기 (위 사진/영상)
-- [x] 2단계 — 조각 지오메트리 추출 (`geometry.json`, 652개 조합)
-- [x] 3단계 — 대량 수집 (140,868개, 세대 gen2~gen5)
-- [x] 4단계 — 학습 + 조건부 생성 + constrained decoding + best-of-N
-- [~] 5단계 — 게임 안 플러그인 UI (지도 메뉴 -> "우든 코스터 생성기").
-      `scripts/08_daemon.py` 를 띄워둬야 동작한다.
+   ```bash
+   python scripts/08_daemon.py --port 8080
+   ```
+
+4. 게임에서 **지도 메뉴 → "우든 코스터 생성기"** → 값 조정 → **트랙 생성**.
+
+콘솔에서 바로 돌려볼 수도 있다:
+
+```bash
+python scripts/07_bestof.py --width 28 --depth 24 --n 16
+```
+
+## 파이프라인 스크립트
+
+| 단계 | 명령 | 하는 일 |
+|---|---|---|
+| 0 | `python scripts/00_smoke.py` | 게임 연결 확인 |
+| 1 | `python scripts/02_hello_coaster.py` | 손으로 짠 코스터 하나 짓고 평점 받기 |
+| 2 | `python scripts/01_extract_geometry.py`<br/>`python scripts/14_extract_slopes.py`<br/>`python scripts/09_extract_footprints.py` | 조각 연결 규칙(`geometry.json`)과 실제 점유 타일(`footprints.json`)을 게임에서 실측 |
+| 3 | `python scripts/setup_instances.py --n 16`<br/>`python scripts/run_instances.py --n 16`<br/>`python scripts/collect_all.py --n 16 --each 5000 --seed-base 2400 --tag run15` | 인스턴스 16개 병렬 수집 (시간당 약 2,000개) |
+| 3 | `python scripts/build_dataset.py --min-gen gen2` | 세대 태깅 + 중복 제거 → `data/dataset.jsonl` |
+| 4 | `python scripts/04_train.py` | 조건부 GPT 학습 (RTX 5070 에서 1~2분) |
+| 4 | `python scripts/07_bestof.py` | 후보 → A\* → 게임 채점 → 최고 선택 |
+| 5 | `python scripts/08_daemon.py` | 게임 UI 요청 처리 |
+
+분석 도구 (게임 없이 돈다):
+
+| 명령 | 하는 일 |
+|---|---|
+| `python scripts/16_rating_breakdown.py` | 평점 공식 원문으로 흥미도를 항별로 분해 |
+| `python scripts/18_gen_profile.py` | 생성기 세대별 특징표 |
+| `python scripts/11_human_gap.py` | 사람 디자인과의 구조 차이 |
+| `python scripts/19_doc_figures.py` | 문서 그림 다시 그리기 |
+| `python scripts/verify_claims.py` | 문서 숫자를 데이터로 대조 |
+
+> **병렬 수집 주의**: 창을 그냥 여러 개 띄우면 Windows 에서는 전부 8080 에 겹쳐 붙어 서로의 트랙을 지운다.
+> 반드시 `setup_instances.py` / `run_instances.py` 를 쓸 것. 16개가 최적이다 (16 논리 코어).
 
 ## 구조
 
 ```
-rct/             게임 통신 (TCP 클라이언트, 환경 래퍼, 상수)
-geom/            지오메트리 추출 + 순수 파이썬 시뮬레이터 + A* 플래너
-gen/             절차적 트랙 생성기
-model/           토크나이저 + GPT + constrained decoding + best-of-N
-plugin/          ridecreation-api 패치 정본 (아래 참고)
-scripts/         단계별 실행 스크립트
-data/            수집된 데이터셋 (gitignore)
-geometry.json    조각 연결 규칙 (게임에서 추출)
+plugin/          게임 안 TCP JSON API + 생성기 UI (ridecreation-api 패치 정본)
+rct/             게임 통신 (클라이언트, 환경 래퍼, 조각 상수)
+geom/            조각 기하 + 순수 파이썬 시뮬레이터 + A* 플래너
+gen/             절차적 트랙 생성기 + 우든 요건 예측기
+model/           토크나이저, GPT, constrained decoding, LM+A* 하이브리드, best-of-N
+scripts/         단계별 실행·분석 스크립트
+docs/            학습 문서, 개발 기록, 미디어
+geometry.json    조각 연결 규칙 (게임에서 추출, 676개 조합)
 footprints.json  조각이 실제로 점유하는 타일 (게임에서 실측)
-track_names.json 조각 ID -> 이름표
 ```
 
-## 준비
+## 문서
 
-1. OpenRCT2 0.5.0+ 설치 (quickjs-ng 스크립팅 엔진 필요), RCT2 원본 에셋 연결
-2. **`plugin/ridecreation-api.js` 를 `Documents/OpenRCT2/plugin/` 에 복사.**
-   이건 `markusklock/openrct2-ridecreation-api` 에 패치를 얹은 정본이다
-   (`getNextValidSegments` 부재 대응 + 포트 고정 + `getRideTiles`/`getTileElements`/
-   `deleteRide`/`findFreePlot` 엔드포인트 추가). 원본을 그대로 쓰면 트랙 배치가
-   깨지고 병렬 수집도 안 된다 — 자세한 건 `CLAUDE.md`.
-3. `openrct2.com` 으로 실행하고 평지 샌드박스 공원 로드
-   (`openrct2.exe` 로 실행하면 플러그인 로그가 안 보인다. 플러그인은 타이틀 화면이
-   아니라 **공원 로드 후** 시작된다)
-4. 시나리오에 Wooden Roller Coaster 오브젝트가 있는지 확인
-5. `pip install -r requirements.txt` (0~3단계는 표준 라이브러리만으로 돈다.
-   torch 는 4단계부터)
+- **[docs/TRAINING.md](docs/TRAINING.md)** — 모델을 어떻게 학습했고 왜 이렇게 설계했는가, 그리고 어떻게 나아지고 있는가 (그림 설명)
+- **[docs/DEVLOG.md](docs/DEVLOG.md)** — 버전(생성기 세대) 기록, 실측 메모, 틀렸던 결론과 정정
+- **[CLAUDE.md](CLAUDE.md)** — 원본 인수인계 노트. 모든 실측의 근거가 날짜별로 남아 있다
 
-## 실행
+## 라이선스
 
-```bash
-python scripts/00_smoke.py                 # 연결 확인
-python scripts/01_extract_geometry.py      # geometry.json 생성
-python scripts/02_hello_coaster.py         # 코스터 하나 짓고 평점 (위 사진)
-python scripts/09_extract_footprints.py    # footprints.json 실측 (어휘 늘리면 다시)
-python scripts/03_collect.py --n 100       # 데이터 수집
-python scripts/build_dataset.py --min-gen gen2   # part -> dataset.jsonl (세대 태깅 + dedupe)
-python scripts/04_train.py                 # 조건부 생성 모델 학습 (RTX 5070 기준 1.2분)
-python scripts/05_sample.py --constrained  # 조건이 먹히는지 평가
-python scripts/07_bestof.py --exc 5 --int 8 --latg 2.5   # 목표 -> 트랙 하나
-python scripts/08_daemon.py                # 게임 안 UI 를 받는 데몬 (5단계)
-```
-
-`07_bestof.py` 가 전체 흐름이다: LM 이 조건부로 후보를 뽑고 -> A\* 가 스테이션까지
-닫고 -> 게임이 채점하고 -> 제약(격렬도 상한) 아래에서 최고를 고른다.
-
-### 병렬 수집
-
-인스턴스를 여러 개 띄우면 그 배로 빨라진다. 다만 **창을 그냥 여러 개 띄우면 안 된다**
-— Windows 에서는 모든 인스턴스가 8080 에 겹쳐 붙어서 서로의 트랙을 지운다
-(이유는 `CLAUDE.md` 의 "병렬 수집"). 대신:
-
-```bash
-python scripts/setup_instances.py --n 25   # 인스턴스별 폴더 + 포트 고정 (한 번만)
-python scripts/run_instances.py --n 25     # 실행 + 공원 로드 + 포트 확인
-python scripts/collect_all.py --n 25 --each 5000 --seed-base 500 --tag run4
-python scripts/collect_watchdog.py --n 25 --tag run4 --seed-base 500   # 죽은 인스턴스를 5분마다 되살린다
-```
-
-수집기는 트랙 하나가 끝날 때마다 자기 part 파일에 append 하므로 **아무 때나 끊어도
-모은 건 남는다.** `--seed-base` 는 안 쓴 값으로 줄 것 (겹치면 같은 트랙이 다시 나온다).
-합칠 때 `cat` 하지 말고 `build_dataset.py` 를 쓸 것 — 세대 태깅과 중복 제거를 한다.
-
-### 검증
-
-```bash
-python scripts/verify_claims.py    # CLAUDE.md 의 데이터 통계 32개를 데이터로 대조
-python scripts/check_buckets.py    # 조건 토큰이 실제로 조건 노릇을 하는지
-```
-
-둘 다 게임 없이 돈다. **수집을 더 하면 `verify_claims.py` 가 깨진다 — 그때 문서
-숫자를 같이 고칠 것.**
-
-## 알려진 한계
-
-- **어휘가 절반이다.** 생성기 21종 = 스톡 코스터의 53.5%. 60도 경사는
-  `geometry.json` 에 이미 있어서 생성기만 고치면 되고, 대각선은 다단계 추출이 필요하다.
-- **평점 축에 도달 불가 구간이 있다.** 흥미도/격렬도/멀미도는 값이 덩어리로 뭉쳐
-  있어서 (격렬도는 4.0~5.0, 10.5~13.5 가 아예 0개) 그 사이를 요청해도 못 만든다.
-  `model/tokenizer.py` 의 `REACHABLE` / `snap()` 이 가까운 값으로 당기고 그 사실을 알린다.
-  좌우G 만 유일하게 연속이라 조건으로 제일 믿을 만하다.
-- **평점은 주변 환경에 영향받는다.** 라벨링은 반드시 빈 평지에서.
-- 한국어 Windows 콘솔은 cp949 라 em-dash 같은 문자를 `print()` 하면 스크립트가
-  통째로 죽는다. 출력에는 ASCII 문장부호만 쓸 것.
-
-설계 배경, 실측 기록, 되돌린 시도들까지 전부 `CLAUDE.md` 에 있다.
+MIT. 플러그인은 [`markusklock/openrct2-ridecreation-api`](https://github.com/markusklock/openrct2-ridecreation-api) 를 기반으로 한다.

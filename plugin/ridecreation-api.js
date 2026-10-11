@@ -268,6 +268,19 @@ function main() {
             return { executed: params.command };
         }],
         ["captureImage",         params => handleCaptureImage(params)],
+        // 데모 녹화용: 메인 화면을 타일 (x, y, z) 로 옮기고 줌/회전을 바꾼다.
+        // 콘솔의 "set location" 은 단위가 화면 픽셀이라 트랙 좌표로 못 맞췄다.
+        ["setView",              async params => {
+            const p = params || {};
+            if (typeof ui === "undefined" || !ui || !ui.mainViewport) throw new Error("no ui (headless)");
+            const vp = ui.mainViewport;
+            if (typeof p.zoom === "number") vp.zoom = p.zoom;
+            if (typeof p.rotation === "number") vp.rotation = p.rotation;
+            if (typeof p.x === "number" && typeof p.y === "number") {
+                vp.scrollTo({ x: p.x * 32 + 16, y: p.y * 32 + 16, z: (p.z || 14) * 8 });
+            }
+            return { zoom: vp.zoom, rotation: vp.rotation };
+        }],
         // -- 트랙 생성기 UI 다리 --------------------------------------------
         // 모델은 파이썬(PyTorch)에 있고 여기는 quickjs 라 직접 호출을 못 한다.
         // 이 빌드에서는 network.createSocket() 의 connect 콜백이 안 와서
