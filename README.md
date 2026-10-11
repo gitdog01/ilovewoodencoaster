@@ -7,9 +7,7 @@
 [![게임 안에서 생성기를 돌리는 데모](docs/media/hero.webp)](docs/media/demo.mp4)
 
 *게임 안 생성기 창 → LM 후보 16개 → A\* 로 폐곡선 → 게임이 채점 → 최고 후보를 남기고 실제로 달린다.
-자막이 들어간 전체 영상(50초)은 [docs/media/demo.mp4](docs/media/demo.mp4).*
-
-<video src="https://github.com/gitdog01/ilovewoodencoaster/raw/main/docs/media/demo.mp4" controls muted width="720"></video>
+이미지를 누르면 자막이 들어간 전체 영상(1분, [demo.mp4](docs/media/demo.mp4))이 열린다.*
 
 ---
 
